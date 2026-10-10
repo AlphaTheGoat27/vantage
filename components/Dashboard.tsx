@@ -1,42 +1,56 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AisSnapshot } from "@/lib/ais";
-import { PORTS } from "@/lib/places";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { ArrowRight, Crosshair, Layers, LoaderCircle, RefreshCw, RotateCw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { AisSnapshot, Ship } from "@/lib/ais";
+import { ago, usd } from "@/lib/format";
 import type { LonLat } from "@/lib/geo";
-import backtest from "@/lib/data/backtest-summary.json";
-import { CATEGORY_LABEL, type Hazard, type PipelineEvent, type PipelineStep, type PipelineStepId, type PlanResponse, type PlannedRoute, type ShipmentInput, type SignalsResponse } from "@/lib/types";
+import type { Hazard, PipelineEvent, PipelineStep, PipelineStepId, PlanResponse, PlannedRoute, ShipmentInput, SignalsResponse } from "@/lib/types";
 import type { BaseMap } from "./Globe";
 import PipelinePanel from "./Pipeline";
-import { HAZARD_COLORS, ROUTE_COLORS } from "./colors";
+import PlanResult, { DECISION } from "./PlanResult";
+import ShipCard from "./ShipCard";
+import SourcesPanel from "./SourcesPanel";
+import ThreatList from "./ThreatList";
+import VoyageForm, { PRESETS, StrikeChips, portName, type VoyageFormState } from "./VoyageForm";
+import { ROUTE_ROLE, SHIP_COLORS } from "./colors";
+import Capsule from "./ui/Capsule";
+import Segmented from "./ui/Segmented";
+import Sheet, { type Detent } from "./ui/Sheet";
+import Switch from "./ui/Switch";
+import { useMediaQuery } from "./ui/useMediaQuery";
 
 const Globe = dynamic(() => import("./Globe"), { ssr: false });
 
-const usd = (n: number) => (Math.abs(n) >= 1e6 ? `$${(n / 1e6).toFixed(2)}M` : `$${Math.round(n / 1000)}k`);
-const ago = (iso?: string) => {
-  if (!iso) return "";
-  const h = (Date.now() - Date.parse(iso)) / 3600_000;
-  return h < 1 ? `${Math.max(1, Math.round(h * 60))}m ago` : h < 48 ? `${Math.round(h)}h ago` : `${Math.round(h / 24)}d ago`;
-};
-const confColor = (c?: number) => (c === undefined ? "#94a3b8" : c >= 70 ? "#22e39b" : c >= 45 ? "#facc15" : "#ff9f1a");
-const riskColor = (s: number) => (s >= 70 ? "#ff4d4d" : s >= 45 ? "#ff9f1a" : s >= 25 ? "#facc15" : "#22e39b");
+type Tab = "voyage" | "threats" | "sources";
+const TABS = [
+  { value: "voyage", label: "Voyage" },
+  { value: "threats", label: "Threats" },
+  { value: "sources", label: "Sources" },
+] as const;
+const MAP_STYLES = [
+  { value: "dark", label: "Dark" },
+  { value: "osm", label: "Standard" },
+  { value: "satellite", label: "Satellite" },
+] as const;
+const SHIP_LEGEND: Partial<Record<Ship["cls"], string>> = { cargo: "Cargo", tanker: "Tanker", passenger: "Passenger", fishing: "Fishing", other: "Other ships" };
 
-const PRESETS: { label: string; o: string; d: string; cargo: string; value: number; critical: boolean }[] = [
-  { label: "Shanghai → Rotterdam", o: "CNSHA", d: "NLRTM", cargo: "Semiconductors", value: 85e6, critical: true },
-  { label: "Port Klang → Hamburg", o: "MYPKG", d: "DEHAM", cargo: "Medical gloves", value: 18e6, critical: false },
-  { label: "Jebel Ali → Rotterdam", o: "AEJEA", d: "NLRTM", cargo: "Petrochemicals", value: 40e6, critical: false },
-  { label: "Houston → Shanghai", o: "USHOU", d: "CNSHA", cargo: "LNG equipment", value: 60e6, critical: true },
-  { label: "Busan → Los Angeles", o: "KRPUS", d: "USLAX", cargo: "EV batteries", value: 70e6, critical: true },
-];
+const ICON = { size: 16, strokeWidth: 1.75 } as const;
+const PANEL_SPRING = { type: "spring", bounce: 0, duration: 0.35 } as const;
+const AIS_POLL_MS = 90_000;
+const SIDEBAR_RIGHT_EDGE = 12 + 380; // px from the left edge of the screen
+const PEEK_HEIGHT = 128; // the mobile sheet at its peek detent, px
 
-const DECISION_STYLE: Record<PlanResponse["decision"], { label: string; cls: string }> = {
-  PROCEED: { label: "PROCEED ON ORIGINAL ROUTE", cls: "bg-emerald-500/15 border-emerald-400/60 text-emerald-300" },
-  PROCEED_TO_CHECKPOINT: { label: "SAIL TO CHECKPOINT, THEN REASSESS", cls: "bg-amber-500/15 border-amber-400/60 text-amber-200" },
-  REROUTE: { label: "REROUTE NOW", cls: "bg-rose-500/15 border-rose-400/60 text-rose-200" },
-};
+const readDemoFlag = () => new URLSearchParams(window.location.search).get("demo") === "1";
+
+type PlanStreamEvent = PipelineEvent | { type: "result"; plan: PlanResponse } | { type: "error"; error: string };
 
 export default function Dashboard() {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const reduce = useReducedMotion();
+
   const [signals, setSignals] = useState<SignalsResponse | null>(null);
   const [sigErr, setSigErr] = useState<string | null>(null);
   const [loadingSignals, setLoadingSignals] = useState(true);
@@ -48,32 +62,51 @@ export default function Dashboard() {
   const [progress, setProgress] = useState<{ step: PipelineStepId; message: string } | null>(null);
   const [activeRoute, setActiveRoute] = useState<PlannedRoute["id"] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [selectedShip, setSelectedShip] = useState<number | null>(null);
   const [baseMap, setBaseMap] = useState<BaseMap>("dark");
   const [pickMode, setPickMode] = useState(false);
   const [strikes, setStrikes] = useState<LonLat[]>([]);
   const [onlyRoute, setOnlyRoute] = useState(false);
-  const [tab, setTab] = useState<"threats" | "sources">("threats");
-  const [form, setForm] = useState({
+  const [tab, setTab] = useState<Tab>("voyage");
+  const [demo, setDemo] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [detent, setDetent] = useState<Detent>("peek");
+  const [form, setForm] = useState<VoyageFormState>({
     originId: "CNSHA", destinationId: "NLRTM", cargo: "Semiconductors", cargoValueUsd: 85e6, critical: true,
     speedKnots: 16, dailyCostUsd: 60000, hullValueUsd: 120e6,
   });
 
-  const loadSignals = useCallback(async () => {
+  // only the latest request may write state (demo switches and replans can overlap)
+  const sigReq = useRef(0);
+  const planReq = useRef(0);
+  const planAbort = useRef<AbortController | null>(null);
+
+  const loadSignals = useCallback(async (demoMode: boolean) => {
+    const id = ++sigReq.current;
     setLoadingSignals(true);
     setSigErr(null);
     try {
-      const r = await fetch("/api/signals");
+      const r = await fetch(demoMode ? "/api/signals?demo=1" : "/api/signals");
       if (!r.ok) throw new Error(`signals ${r.status}`);
-      setSignals(await r.json());
+      const j = (await r.json()) as SignalsResponse;
+      if (id === sigReq.current) setSignals(j);
     } catch (e) {
-      setSigErr(String(e));
+      if (id === sigReq.current) setSigErr(e instanceof Error ? e.message : String(e));
     } finally {
-      setLoadingSignals(false);
+      if (id === sigReq.current) setLoadingSignals(false);
     }
   }, []);
 
   useEffect(() => {
-    // live AIS ships: sampled server-side for a few seconds, refreshed every 3 minutes (returns configured:false without a key)
+    // initial load on mount: the demo flag comes from ?demo=1 in the page URL
+    const d = readDemoFlag();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (d) setDemo(true);
+    loadSignals(d);
+  }, [loadSignals]);
+
+  useEffect(() => {
+    // live AIS ships: sampled server-side for a few seconds, cached 90 s (returns configured:false without a key)
     let alive = true;
     const pull = () =>
       fetch("/api/ais")
@@ -81,21 +114,15 @@ export default function Dashboard() {
         .then((j: AisSnapshot) => alive && setAis(j))
         .catch(() => undefined);
     pull();
-    const t = setInterval(pull, 180_000);
+    const t = setInterval(pull, AIS_POLL_MS);
     return () => {
       alive = false;
       clearInterval(t);
     };
   }, []);
 
-  useEffect(() => {
-    // initial live-data load on mount
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadSignals();
-  }, [loadSignals]);
-
   const runPlan = useCallback(
-    async (override?: Partial<typeof form>, strikeList = strikes) => {
+    async (override?: Partial<VoyageFormState>, strikeList = strikes) => {
       const body: ShipmentInput = {
         ...form, ...override,
         extraHazards: strikeList.map((c, i) => ({
@@ -103,24 +130,31 @@ export default function Dashboard() {
           rationale: "", evidence: [], sources: [],
         })),
       };
+      planAbort.current?.abort();
+      const ctrl = new AbortController();
+      planAbort.current = ctrl;
+      const id = ++planReq.current;
       setPlanning(true);
       setPlanErr(null);
       setSteps([]);
       setProgress({ step: "detect", message: "Starting…" });
+      setEditing(false);
       try {
         // the plan streams one event per pipeline stage (newline-delimited JSON)
-        const r = await fetch("/api/plan?stream=1", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+        const r = await fetch(`/api/plan?stream=1${demo ? "&demo=1" : ""}`, {
+          method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: ctrl.signal,
+        });
         if (!r.ok || !r.body) throw new Error(`plan ${r.status}`);
         const reader = r.body.getReader();
         const dec = new TextDecoder();
         let buf = "";
-        let final: PlanResponse | null = null;
+        const out: { plan: PlanResponse | null } = { plan: null };
         const handle = (line: string) => {
-          if (!line.trim()) return;
-          const ev = JSON.parse(line) as PipelineEvent | { type: "result"; plan: PlanResponse } | { type: "error"; error: string };
+          if (!line.trim() || id !== planReq.current) return;
+          const ev = JSON.parse(line) as PlanStreamEvent;
           if (ev.type === "progress") setProgress({ step: ev.step, message: ev.message });
           else if (ev.type === "step") setSteps((prev) => [...prev.filter((x) => x.step !== ev.step), ev]);
-          else if (ev.type === "result") final = ev.plan;
+          else if (ev.type === "result") out.plan = ev.plan;
           else if (ev.type === "error") throw new Error(ev.error);
         };
         for (;;) {
@@ -132,18 +166,42 @@ export default function Dashboard() {
           lines.forEach(handle);
         }
         handle(buf);
-        if (!final) throw new Error("the plan stream ended without a result");
-        setPlan(final);
+        if (id !== planReq.current) return;
+        if (!out.plan) throw new Error("the plan stream ended without a result");
+        setPlan(out.plan);
         setActiveRoute(null);
       } catch (e) {
+        if (id !== planReq.current || ctrl.signal.aborted) return;
         setPlanErr(e instanceof Error ? e.message : String(e));
       } finally {
-        setPlanning(false);
-        setProgress(null);
+        if (id === planReq.current) {
+          setPlanning(false);
+          setProgress(null);
+        }
       }
     },
-    [form, strikes],
+    [form, strikes, demo],
   );
+
+  const toggleDemo = (on: boolean) => {
+    setDemo(on);
+    const url = new URL(window.location.href);
+    if (on) url.searchParams.set("demo", "1");
+    else url.searchParams.delete("demo");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    // a different world: drop the plan (and any plan in flight) and reload the signals
+    planAbort.current?.abort();
+    planReq.current++;
+    setPlan(null);
+    setPlanErr(null);
+    setPlanning(false);
+    setSteps([]);
+    setProgress(null);
+    setActiveRoute(null);
+    setSelected(null);
+    setOnlyRoute(false);
+    loadSignals(on);
+  };
 
   const hazards = useMemo(() => {
     const base = signals?.hazards ?? [];
@@ -158,529 +216,496 @@ export default function Dashboard() {
     return m;
   }, [signals, plan]);
 
+  const ship = useMemo(() => (selectedShip === null ? null : (ais?.ships.find((s) => s.mmsi === selectedShip) ?? null)), [ais, selectedShip]);
+
+  const setPick = useCallback(
+    (on: boolean) => {
+      setPickMode(on);
+      if (on && !isDesktop) setDetent("peek"); // uncover the globe
+    },
+    [isDesktop],
+  );
+
   const onPick = useCallback(
     (p: LonLat) => {
       const next = [...strikes, p];
       setStrikes(next);
       setPickMode(false);
+      setTab("voyage");
       runPlan(undefined, next);
     },
     [strikes, runPlan],
   );
 
-  const recommended = plan?.routes.find((r) => r.id === plan.recommendedRouteId);
-  const backup = plan?.routes.find((r) => r.id === plan.backupRouteId);
-  const original = plan?.routes.find((r) => r.id === "original");
+  const updateStrikes = (next: LonLat[]) => {
+    setStrikes(next);
+    if (plan) runPlan(undefined, next);
+  };
+
+  const selectShip = useCallback(
+    (mmsi: number | null) => {
+      setSelectedShip(mmsi);
+      if (mmsi !== null && !isDesktop) setDetent((d) => (d === "peek" ? "half" : d));
+    },
+    [isDesktop],
+  );
+
+  const choosePreset = (i: number) => {
+    const p = PRESETS[i];
+    const next = { ...form, originId: p.o, destinationId: p.d, cargo: p.cargo, cargoValueUsd: p.value, critical: p.critical };
+    setForm(next);
+    runPlan(next);
+  };
+
+  // Esc: cancel strike picking first, then close the ship card
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (pickMode) setPickMode(false);
+      else if (selectedShip !== null) setSelectedShip(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pickMode, selectedShip]);
+
+  // ---- pieces shared by the desktop sidebar and the mobile sheet
+
+  const header = (
+    <div className="space-y-0.5">
+      <div className="flex items-center gap-2">
+        <h1 className="font-display text-headline font-semibold text-ink">Vantage</h1>
+        <button
+          type="button"
+          className="btn-plain ml-auto h-7 w-7 p-0 text-ink-2"
+          aria-label="Refresh live signals"
+          title="Refresh live signals"
+          onClick={() => loadSignals(demo)}
+          disabled={loadingSignals}
+        >
+          <RefreshCw size={15} strokeWidth={1.75} className={loadingSignals ? "animate-spin" : ""} />
+        </button>
+      </div>
+      <StatusLine signals={signals} loading={loadingSignals} error={sigErr} demo={demo} />
+    </div>
+  );
+
+  const tabs = <Segmented mode="tabs" idBase="vt" label="Panel" options={TABS} value={tab} onChange={setTab} />;
+
+  const voyagePanel = (
+    <div className="space-y-4">
+      {plan || planning ? (
+        <>
+          <VoyageSummary form={form} open={editing} onToggle={() => setEditing((v) => !v)} />
+          {editing && (
+            <VoyageForm
+              form={form} onChange={setForm} onPreset={choosePreset} onSubmit={() => runPlan()} planning={planning}
+              strikes={strikes} onRemoveStrike={(i) => updateStrikes(strikes.filter((_, j) => j !== i))} onClearStrikes={() => updateStrikes([])}
+            />
+          )}
+          {!editing && strikes.length > 0 && (
+            <StrikeChips strikes={strikes} onRemove={(i) => updateStrikes(strikes.filter((_, j) => j !== i))} onClear={() => updateStrikes([])} />
+          )}
+        </>
+      ) : (
+        <VoyageForm
+          form={form} onChange={setForm} onPreset={choosePreset} onSubmit={() => runPlan()} planning={planning}
+          strikes={strikes} onRemoveStrike={(i) => updateStrikes(strikes.filter((_, j) => j !== i))} onClearStrikes={() => updateStrikes([])}
+        />
+      )}
+
+      {planErr && !planning && (
+        <div role="alert" className="flex items-center gap-2 text-callout">
+          <span className="min-w-0 flex-1 text-red">Couldn’t assess the route ({planErr}).</span>
+          <button type="button" className="btn-plain" onClick={() => runPlan()}>
+            <RotateCw size={14} strokeWidth={1.75} />
+            Retry
+          </button>
+        </div>
+      )}
+
+      {planning ? (
+        <PipelinePanel steps={steps} progress={progress} running onSelectHazard={setSelected} />
+      ) : plan ? (
+        <PlanResult
+          plan={plan}
+          activeRoute={activeRoute}
+          onSelectRoute={setActiveRoute}
+          selectedHazardId={selected}
+          onSelectHazard={setSelected}
+          hazardsById={allHazards}
+          onRevealDetail={isDesktop ? undefined : () => setDetent("full")}
+        />
+      ) : (
+        !planErr && (
+          <div className="space-y-1 text-callout text-ink-3">
+            <p>Choose a voyage and press Assess Route to check it against {demo ? "the scenario’s threats" : "live threats"}.</p>
+            <p>Simulate strike drops a hypothetical strike on the globe so you can watch the plan adapt.</p>
+          </div>
+        )
+      )}
+    </div>
+  );
+
+  const panel = (
+    <motion.div
+      key={tab}
+      role="tabpanel"
+      id={`vt-panel-${tab}`}
+      aria-labelledby={`vt-tab-${tab}`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+    >
+      {tab === "voyage" && voyagePanel}
+      {tab === "threats" && (
+        <ThreatList
+          hazards={hazards}
+          selectedId={selected}
+          onSelect={setSelected}
+          loading={loadingSignals}
+          aiNote={signals?.ai.note}
+          routeFilter={plan ? { on: onlyRoute, onChange: setOnlyRoute } : undefined}
+        />
+      )}
+      {tab === "sources" && <SourcesPanel signals={signals} ais={ais} />}
+    </motion.div>
+  );
+
+  const peekLine = planning ? (
+    <div className="flex h-10 items-center gap-2 text-callout" role="status">
+      <LoaderCircle size={16} strokeWidth={1.75} className="shrink-0 animate-spin text-accent" />
+      <span className="shrink-0 font-medium text-ink">Assessing route</span>
+      <span className="min-w-0 truncate text-ink-3">{progress?.message}</span>
+    </div>
+  ) : plan ? (
+    <button type="button" className="flex h-10 w-full items-baseline gap-2 rounded-md pt-2 text-left" onClick={() => setDetent("half")}>
+      <span className={`shrink-0 font-display text-headline font-semibold ${DECISION[plan.decision].text}`}>{DECISION[plan.decision].label}</span>
+      <span className="num min-w-0 truncate text-callout text-ink-3">{peekDetail(plan)}</span>
+    </button>
+  ) : (
+    <button type="button" className="btn-primary w-full" disabled={form.originId === form.destinationId} onClick={() => runPlan()}>
+      Assess Route
+    </button>
+  );
+
+  const shipCard = ship && <ShipCard ship={ship} onClose={() => setSelectedShip(null)} variant={isDesktop ? "floating" : "inline"} />;
+
+  const selectedRouteId = activeRoute ?? plan?.recommendedRouteId;
+  const hasAlternatives = (plan?.routes ?? []).some((r) => r.id !== "original" && r.id !== selectedRouteId);
+  const shipClasses = [...new Set((ais?.ships ?? []).map((s) => s.cls))].filter((c) => SHIP_LEGEND[c]);
 
   return (
-    <div className="relative h-dvh w-full overflow-hidden bg-[#02060d] text-slate-200">
+    <div className="relative h-dvh w-full overflow-hidden bg-space text-ink">
       <Globe
         hazards={signals?.hazards ?? []}
         chokepoints={signals?.chokepoints ?? []}
         ships={ais?.ships}
         plan={plan}
         activeRouteId={activeRoute}
+        onSelectRoute={setActiveRoute}
         selectedHazardId={selected}
         baseMap={baseMap}
         pickMode={pickMode}
         onPick={onPick}
         onSelectHazard={setSelected}
+        selectedShipMmsi={selectedShip}
+        onSelectShip={selectShip}
+        insets={isDesktop ? { left: SIDEBAR_RIGHT_EDGE, bottom: 0 } : { left: 0, bottom: PEEK_HEIGHT }}
+        autoRotate={!pickMode && selectedShip === null}
       />
 
-      {/* top bar */}
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-3">
-        <div className="pointer-events-auto rounded-xl border border-white/10 bg-[#07101d]/85 px-4 py-2 backdrop-blur">
-          <div className="flex items-baseline gap-2">
-            <span className="font-mono text-lg font-bold tracking-[0.3em] text-cyan-300">VANTAGE</span>
-            <span className="hidden text-xs text-slate-400 sm:inline">live maritime risk & rerouting</span>
+      {/* sidebar (desktop) or sheet (mobile) */}
+      {isDesktop ? (
+        <motion.aside
+          aria-label="Vantage planner"
+          className="material absolute bottom-3 left-3 top-3 z-10 flex w-[380px] flex-col overflow-hidden rounded-2xl"
+          // same initial on server and client (the reduced-motion preference is unknown during SSR); reduce only shortens it
+          initial={{ opacity: 0, x: -16 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={reduce ? { duration: 0.2 } : PANEL_SPRING}
+        >
+          <div className="shrink-0 space-y-3 px-4 pb-3 pt-3.5">
+            {header}
+            {tabs}
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
-            {loadingSignals ? (
-              <span className="animate-pulse">fetching live signals…</span>
-            ) : signals ? (
-              <>
-                <span>
-                  <span className="mr-1 inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                  {signals.sources.filter((s) => s.ok && !s.fallback).length}/{signals.sources.length} live
-                  {signals.sources.some((s) => s.fallback) && <span className="text-amber-300"> · {signals.sources.filter((s) => s.fallback).length} on snapshot</span>} sources · {signals.hazards.length} hazards · updated {ago(signals.generatedAt)}
-                </span>
-                <span className={signals.ai.model ? "text-violet-300" : "text-slate-500"}>
-                  AI: {signals.ai.model ? `Gemini (${signals.ai.model})` : "off"}
-                </span>
-              </>
-            ) : (
-              <span className="text-rose-300">{sigErr}</span>
-            )}
-            <button onClick={loadSignals} className="rounded border border-white/10 px-1.5 py-0.5 hover:bg-white/10">
-              refresh
-            </button>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4" style={{ overscrollBehavior: "contain" }}>
+            {panel}
           </div>
-        </div>
-        <div className="pointer-events-auto flex gap-1 rounded-xl border border-white/10 bg-[#07101d]/85 p-1 text-xs backdrop-blur">
-          {(["dark", "osm", "satellite"] as BaseMap[]).map((b) => (
-            <button key={b} onClick={() => setBaseMap(b)} className={`rounded-lg px-2.5 py-1 capitalize ${baseMap === b ? "bg-cyan-500/20 text-cyan-200" : "text-slate-400 hover:bg-white/5"}`}>
-              {b === "osm" ? "OpenStreetMap" : b}
-            </button>
-          ))}
-        </div>
-      </header>
-
-      {/* left: threat board */}
-      <aside className="absolute bottom-3 left-3 top-24 z-10 hidden w-[360px] flex-col overflow-hidden rounded-xl border border-white/10 bg-[#07101d]/88 backdrop-blur md:flex">
-        <div className="flex items-center gap-1 border-b border-white/10 p-2 text-xs">
-          <button onClick={() => setTab("threats")} className={`rounded px-2 py-1 ${tab === "threats" ? "bg-white/10 text-white" : "text-slate-400"}`}>
-            Threat board
-          </button>
-          <button onClick={() => setTab("sources")} className={`rounded px-2 py-1 ${tab === "sources" ? "bg-white/10 text-white" : "text-slate-400"}`}>
-            Data sources
-          </button>
-          {plan && tab === "threats" && (
-            <label className="ml-auto flex items-center gap-1 text-slate-400">
-              <input type="checkbox" checked={onlyRoute} onChange={(e) => setOnlyRoute(e.target.checked)} /> on my route
-            </label>
-          )}
-        </div>
-        {tab === "threats" ? (
-          <div className="flex-1 space-y-1.5 overflow-y-auto p-2">
-            {signals?.ai.note && <p className="rounded bg-violet-500/10 p-2 text-[11px] text-violet-200">{signals.ai.note}</p>}
-            {hazards.map((h, i) => (
-              <HazardCard key={h.id} h={h} rank={i + 1} open={selected === h.id} onClick={() => setSelected(selected === h.id ? null : h.id)} />
-            ))}
-            {!loadingSignals && hazards.length === 0 && <p className="p-3 text-xs text-slate-500">No hazards.</p>}
-          </div>
-        ) : (
-          <div className="flex-1 space-y-2 overflow-y-auto p-3 text-xs">
-            {signals?.sources.map((s) => (
-              <div key={s.name} className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
-                <div className="flex items-center gap-2">
-                  <span className={`h-2 w-2 rounded-full ${!s.ok ? "bg-rose-400" : s.fallback ? "bg-amber-400" : "bg-emerald-400"}`} />
-                  <a href={s.url} target="_blank" rel="noreferrer" className="font-medium text-slate-200 hover:underline">
-                    {s.name}
-                  </a>
-                  <span className={`rounded px-1 text-[10px] ${!s.ok ? "bg-rose-500/20 text-rose-300" : s.fallback ? "bg-amber-500/20 text-amber-300" : "bg-emerald-500/15 text-emerald-300"}`}>
-                    {!s.ok ? "down" : s.fallback ? "snapshot" : "live"}
-                  </span>
-                  <span className="ml-auto font-mono text-slate-400">{s.count}</span>
-                </div>
-                {s.note && <p className="mt-1 text-slate-500">{s.note}</p>}
-              </div>
-            ))}
-            <AisCard ais={ais} />
-            {signals?.filtering && <FilteringCard f={signals.filtering} />}
-            {signals?.model && (
-              <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
-                <p className="font-medium text-slate-200">Trained model</p>
-                <p className="mt-1 text-slate-500">
-                  {signals.model.ok ? "Active" : "Unavailable"} · trained through {signals.model.trainedThrough} · predicts a sustained 30%+ traffic collapse within {signals.model.horizonDays} days · features as of {signals.model.asOf ?? "n/a"}.
-                  {signals.model.note && <span className="text-amber-300"> {signals.model.note}</span>}
-                </p>
-              </div>
-            )}
-            <BacktestCard />
-            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2 text-slate-400">
-              <p className="font-medium text-slate-200">Also used</p>
-              <p className="mt-1">Open-Meteo Marine wave forecast (per route, at the day the ship arrives) · Eurostat MARNET sea-lane network · OpenStreetMap / CARTO / Esri imagery · Google Gemini for categorizing, reasoning and explanations.</p>
+        </motion.aside>
+      ) : (
+        <Sheet
+          label="Vantage planner"
+          detent={detent}
+          onDetentChange={setDetent}
+          peekHeight={PEEK_HEIGHT}
+          header={
+            <div className="space-y-2 pb-2">
+              {header}
+              {peekLine}
             </div>
+          }
+        >
+          <div className="space-y-3 pt-1">
+            {shipCard}
+            {tabs}
+            {panel}
           </div>
-        )}
-      </aside>
+        </Sheet>
+      )}
 
-      {/* right: planner */}
-      <aside className="absolute bottom-3 right-3 top-24 z-10 flex w-[min(440px,calc(100%-24px))] flex-col overflow-hidden rounded-xl border border-white/10 bg-[#07101d]/90 backdrop-blur">
-        <div className="space-y-2 border-b border-white/10 p-3 text-xs">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white">Shipment planner</h2>
-            <select
-              className="rounded border border-white/10 bg-[#0b1626] px-1.5 py-1 text-[11px]"
-              value=""
-              onChange={(e) => {
-                const p = PRESETS[Number(e.target.value)];
-                if (!p) return;
-                const next = { ...form, originId: p.o, destinationId: p.d, cargo: p.cargo, cargoValueUsd: p.value, critical: p.critical };
-                setForm(next);
-                runPlan(next);
-              }}
-            >
-              <option value="">Demo voyages…</option>
-              {PRESETS.map((p, i) => (
-                <option key={p.label} value={i}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <PortSelect label="From" value={form.originId} onChange={(v) => setForm({ ...form, originId: v })} />
-            <PortSelect label="To" value={form.destinationId} onChange={(v) => setForm({ ...form, destinationId: v })} />
-            <Field label="Cargo">
-              <input className="input" value={form.cargo} onChange={(e) => setForm({ ...form, cargo: e.target.value })} />
-            </Field>
-            <Field label="Cargo value (USD M)">
-              <input className="input" type="number" min={0} value={form.cargoValueUsd / 1e6} onChange={(e) => setForm({ ...form, cargoValueUsd: Number(e.target.value) * 1e6 })} />
-            </Field>
-            <Field label="Speed (knots)">
-              <input className="input" type="number" min={6} max={25} value={form.speedKnots} onChange={(e) => setForm({ ...form, speedKnots: Number(e.target.value) })} />
-            </Field>
-            <Field label="Vessel cost / day (USD k)">
-              <input className="input" type="number" min={1} value={form.dailyCostUsd / 1000} onChange={(e) => setForm({ ...form, dailyCostUsd: Number(e.target.value) * 1000 })} />
-            </Field>
-          </div>
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-1.5">
-              <input type="checkbox" checked={form.critical} onChange={(e) => setForm({ ...form, critical: e.target.checked })} />
-              Critical shipment (lower risk tolerance)
-            </label>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => runPlan()}
-              disabled={planning || form.originId === form.destinationId}
-              className="flex-1 rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-50"
-            >
-              {planning ? "Assessing live risk…" : "Assess & replan"}
-            </button>
-            <button
-              onClick={() => setPickMode(!pickMode)}
-              title="Click a point on the globe to simulate a missile strike on shipping there"
-              className={`rounded-lg border px-3 py-2 text-xs font-medium ${pickMode ? "border-pink-400 bg-pink-500/20 text-pink-200" : "border-white/15 text-slate-300 hover:bg-white/5"}`}
-            >
-              {pickMode ? "Click the globe…" : "💥 Simulate strike"}
-            </button>
-          </div>
-          {strikes.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1 text-[11px] text-pink-200">
-              {strikes.map((s, i) => (
-                <span key={i} className="rounded bg-pink-500/15 px-1.5 py-0.5 font-mono">
-                  strike #{i + 1} {s[1].toFixed(1)}, {s[0].toFixed(1)}
-                </span>
-              ))}
-              <button
-                className="text-slate-400 underline"
-                onClick={() => {
-                  setStrikes([]);
-                  if (plan) runPlan(undefined, []);
-                }}
-              >
-                clear
-              </button>
-            </div>
-          )}
-          {planErr && <p className="text-rose-300">{planErr}</p>}
+      {/* top-right: map controls, the strike hint and the ship card */}
+      <div className="pointer-events-none absolute right-3 z-20 flex flex-col items-end gap-2" style={{ top: "max(12px, env(safe-area-inset-top))" }}>
+        <div className="pointer-events-auto hidden lg:block">
+          <MapControls baseMap={baseMap} onBaseMap={setBaseMap} pickMode={pickMode} onPick={setPick} demo={demo} onDemo={toggleDemo} />
         </div>
-
-        <div className="flex-1 space-y-3 overflow-y-auto p-3 text-xs">
-          {!plan && !planning && (
-            <div className="space-y-2 text-slate-400">
-              <p>Pick a voyage and press <b className="text-slate-200">Assess & replan</b>. Vantage checks the route against live conflict news, chokepoint traffic, cyclones, earthquakes and the wave forecast, ranks each problem, and asks Gemini to replan a feasible safer route and explain it.</p>
-              <p>Use <b className="text-pink-200">Simulate strike</b> to drop a missile strike anywhere and watch the plan change.</p>
-            </div>
-          )}
-          {planning && <PipelinePanel steps={steps} progress={progress} running onSelectHazard={setSelected} />}
-          {plan && !planning && original && backup && (
-            <>
-              <div className={`rounded-lg border p-3 ${DECISION_STYLE[plan.decision].cls}`}>
-                <div className="font-mono text-[11px] tracking-widest">{DECISION_STYLE[plan.decision].label}</div>
-                <p className="mt-1 text-sm font-medium text-white">{plan.explanation.headline}</p>
-                <p className="mt-1 text-[11px] opacity-70">{plan.ai.used ? `Reasoning by Gemini (${plan.ai.model})` : plan.ai.note}</p>
-              </div>
-
-              <div className="space-y-1.5">
-                {plan.routes.map((r) => (
-                  <RouteCard
-                    key={r.id}
-                    r={r}
-                    base={original}
-                    active={(activeRoute ?? plan.recommendedRouteId) === r.id}
-                    recommended={r.id === recommended?.id}
-                    backup={r.id === plan.backupRouteId && r.id !== recommended?.id}
-                    onClick={() => setActiveRoute(r.id)}
-                  />
-                ))}
-              </div>
-
-              {plan.checkpoint && (
-                <Section title={`Checkpoint: ${plan.checkpoint.port.name}`} accent="text-amber-300">
-                  <p>{plan.checkpoint.reassessNote}</p>
-                </Section>
-              )}
-
-              <PipelinePanel steps={plan.pipeline} progress={null} running={false} onSelectHazard={setSelected} />
-
-              <Section title="Why each problem matters (Gemini's reasoning, ranked by the computed priority)">
-                <ol className="space-y-1.5">
-                  {plan.problems.map((p) => (
-                    <li key={p.hazardId} className="cursor-pointer rounded border border-white/5 bg-white/[0.03] p-2 hover:bg-white/[0.06]" onClick={() => setSelected(p.hazardId)}>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-slate-500">#{p.priority}</span>
-                        <span className="rounded px-1.5 py-0.5 text-[10px]" style={{ background: `${HAZARD_COLORS[p.category]}22`, color: HAZARD_COLORS[p.category] }}>
-                          {CATEGORY_LABEL[p.category]}
-                        </span>
-                        <span className="font-medium text-slate-100">{p.title}</span>
-                        {allHazards.get(p.hazardId) && <span className="ml-auto font-mono" style={{ color: riskColor(allHazards.get(p.hazardId)!.score) }}>{allHazards.get(p.hazardId)!.score}</span>}
-                      </div>
-                      <p className="mt-1 text-slate-300">{p.impact}</p>
-                      <p className="mt-0.5 text-slate-500">{p.reasoning}</p>
-                    </li>
-                  ))}
-                  {plan.problems.length === 0 && <li className="text-slate-500">No live hazards on the original route.</li>}
-                </ol>
-              </Section>
-
-              {plan.llmTrace && (
-                <Section title="AI replan, checked by the sea-lane router" accent="text-violet-300">
-                  <p>{plan.llmTrace.rationale}</p>
-                  <p className="mt-1 font-mono text-[11px] text-slate-400">
-                    avoid: {plan.llmTrace.avoidHazardIds.map((id) => allHazards.get(id)?.title ?? id).join(", ") || "none"}
-                    <br />
-                    via: {plan.llmTrace.via.join(" → ") || "direct"}
-                  </p>
-                  <p className={`mt-1 ${plan.llmTrace.valid ? "text-emerald-300" : "text-rose-300"}`}>
-                    {plan.llmTrace.valid ? "✓ " : "✗ "}
-                    {plan.llmTrace.validation}
-                    {!plan.llmTrace.valid && " (falling back to the router's safest route)"}
-                  </p>
-                </Section>
-              )}
-
-              <details className="rounded border border-white/5 p-2 text-slate-500">
-                <summary className="cursor-pointer text-slate-400">Assumptions behind the costs</summary>
-                <ul className="mt-1 list-disc space-y-0.5 pl-4">
-                  <li>Voyage cost = days at {form.speedKnots} kn × vessel cost per day (charter + fuel).</li>
-                  <li>War-risk premium = 1% × exposure to conflict zones × (hull {usd(form.hullValueUsd)} + cargo), charged when exposure ≥ 25%.</li>
-                  <li>Chance of a disruption = 25% × (risk index ÷ 100)², so a risk of 100 means a 1-in-4 chance and 50 means about 6%.</li>
-                  <li>Disruption cost = 15% of cargo value (25% if critical) + 10 days of vessel cost; expected disruption = chance × cost.</li>
-                  <li>Risk index = 100 × (1 − Π(1 − 0.95 × exposure)) over avoidable hazards; exposure = hazard score × proximity, discounted for storms more than 5 days ahead.</li>
-                  <li>Hazards that contain the origin or destination port are shown but not scored, since every route is exposed to them.</li>
-                </ul>
-              </details>
-            </>
-          )}
+        <div className="pointer-events-auto lg:hidden">
+          <CompactControls baseMap={baseMap} onBaseMap={setBaseMap} pickMode={pickMode} onPick={setPick} demo={demo} onDemo={toggleDemo} />
         </div>
-      </aside>
-
-      {/* legend */}
-      <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 hidden -translate-x-1/2 gap-3 rounded-lg border border-white/10 bg-[#07101d]/80 px-3 py-1.5 text-[11px] text-slate-300 backdrop-blur lg:flex">
-        <Legend color={ROUTE_COLORS.original} label="original" dashed />
-        <Legend color={ROUTE_COLORS.ai} label="AI replanned" />
-        <Legend color={ROUTE_COLORS.safest} label="safest" />
-        <Legend color={ROUTE_COLORS.checkpoint} label="via checkpoint" />
-        {ais?.ok && <span className="text-sky-300">▲ live ships (blue cargo · orange tanker)</span>}
-        <span className="text-slate-500">circles: hazards (pulsing = high risk) · teal: chokepoint traffic vs 90-day baseline</span>
+        <AnimatePresence>
+          {pickMode && (
+            <motion.p
+              key="hint"
+              role="status"
+              className="material-control pointer-events-auto rounded-full px-3 py-1.5 text-caption text-ink"
+              initial={{ opacity: 0, y: reduce ? 0 : -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: reduce ? 0 : -4 }}
+              transition={reduce ? { duration: 0.15 } : PANEL_SPRING}
+            >
+              {isDesktop ? "Click the globe to place a strike · Esc to cancel" : "Tap the globe to place a strike"}
+            </motion.p>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {isDesktop && shipCard && (
+            <motion.div
+              key="ship"
+              className="pointer-events-auto w-[300px]"
+              initial={{ opacity: 0, y: reduce ? 0 : -6, scale: reduce ? 1 : 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: reduce ? 0 : -6, scale: reduce ? 1 : 0.98 }}
+              transition={reduce ? { duration: 0.15 } : PANEL_SPRING}
+              style={{ transformOrigin: "top right" }}
+            >
+              {shipCard}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
+      {/* legend: only once routes exist */}
+      <AnimatePresence>
+        {plan && isDesktop && (
+          <motion.ul
+            key="legend"
+            aria-label="Map legend"
+            className="material-control pointer-events-none absolute bottom-3 z-10 flex max-w-[calc(100%-428px)] flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-full px-3.5 py-1.5 text-caption text-ink-2"
+            style={{ left: `calc((100% + ${SIDEBAR_RIGHT_EDGE}px) / 2)`, x: "-50%" }}
+            initial={{ opacity: 0, y: reduce ? 0 : 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: reduce ? 0 : 6 }}
+            transition={reduce ? { duration: 0.15 } : PANEL_SPRING}
+          >
+            <LegendItem label="Selected route">
+              <span aria-hidden className="inline-block h-[3px] w-4 rounded-full" style={{ background: ROUTE_ROLE.selected }} />
+            </LegendItem>
+            {selectedRouteId !== "original" && (
+              <LegendItem label="Original">
+                <span
+                  aria-hidden
+                  className="inline-block h-0.5 w-4 rounded-full"
+                  style={{ background: `repeating-linear-gradient(90deg, ${ROUTE_ROLE.original} 0 4px, transparent 4px 7px)` }}
+                />
+              </LegendItem>
+            )}
+            {hasAlternatives && (
+              <LegendItem label="Alternatives">
+                <span aria-hidden className="inline-block h-0.5 w-4 rounded-full" style={{ background: ROUTE_ROLE.alternative }} />
+              </LegendItem>
+            )}
+            {shipClasses.length > 0 && <li aria-hidden className="h-3 w-px bg-separator" />}
+            {shipClasses.map((c) => (
+              <LegendItem key={c} label={SHIP_LEGEND[c]!}>
+                <span aria-hidden className="inline-block h-2 w-2 rounded-full" style={{ background: SHIP_COLORS[c] }} />
+              </LegendItem>
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function Legend({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
-  return (
-    <span className="flex items-center gap-1">
-      <span className="inline-block h-0.5 w-5" style={{ background: dashed ? `repeating-linear-gradient(90deg, ${color} 0 4px, transparent 4px 7px)` : color }} />
-      {label}
-    </span>
-  );
+/** the short fact after the decision in the mobile peek line: where to reassess, or how much risk the plan removes */
+function peekDetail(plan: PlanResponse) {
+  if (plan.decision === "PROCEED_TO_CHECKPOINT" && plan.checkpoint) return `at ${plan.checkpoint.port.name}`;
+  const orig = plan.routes.find((r) => r.id === "original")?.metrics.riskScore;
+  const rec = plan.routes.find((r) => r.id === plan.recommendedRouteId)?.metrics.riskScore;
+  if (rec === undefined) return "";
+  return orig !== undefined && orig !== rec ? `risk ${orig} → ${rec}` : `risk ${rec}`;
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="flex flex-col gap-0.5 text-[11px] text-slate-400">
-      {label}
-      {children}
-    </label>
+function StatusLine({ signals, loading, error, demo }: { signals: SignalsResponse | null; loading: boolean; error: string | null; demo: boolean }) {
+  const demoInfo = signals?.demo;
+  const capsule = (demo || demoInfo) && (
+    <Capsule tone="demo" title={demoInfo ? `${demoInfo.scenario}: ${demoInfo.note}` : "Hand-authored scenario in place of the live feeds"}>
+      Demo scenario
+    </Capsule>
   );
-}
-
-function PortSelect({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  return (
-    <Field label={label}>
-      <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
-        {[...PORTS].sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}, {p.country}
-          </option>
-        ))}
-      </select>
-    </Field>
-  );
-}
-
-function Section({ title, children, accent }: { title: string; children: React.ReactNode; accent?: string }) {
-  return (
-    <section className="space-y-1">
-      <h3 className={`text-[11px] font-semibold uppercase tracking-wider ${accent ?? "text-slate-400"}`}>{title}</h3>
-      <div className="leading-relaxed text-slate-300">{children}</div>
-    </section>
-  );
-}
-
-function HazardCard({ h, rank, open, onClick }: { h: Hazard; rank: number; open: boolean; onClick: () => void }) {
-  const c = HAZARD_COLORS[h.category] ?? "#ff3b3b";
-  return (
-    <div onClick={onClick} className={`cursor-pointer rounded-lg border p-2 text-xs transition ${open ? "border-white/25 bg-white/[0.07]" : "border-white/5 bg-white/[0.03] hover:bg-white/[0.06]"}`}>
-      <div className="flex items-center gap-2">
-        <span className="w-5 font-mono text-slate-500">{rank}</span>
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded font-mono text-sm font-bold" style={{ background: `${riskColor(h.score)}22`, color: riskColor(h.score) }}>
-          {h.score}
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="truncate font-medium text-slate-100">{h.title}</div>
-          <div className="flex items-center gap-1.5 text-[10px]">
-            <span style={{ color: c }}>{CATEGORY_LABEL[h.category]}</span>
-            {h.confidenceScore !== undefined && (
-              <span className="rounded px-1 font-mono" style={{ background: `${confColor(h.confidenceScore)}22`, color: confColor(h.confidenceScore) }} title={h.confidenceReason}>
-                conf {h.confidenceScore}%
-              </span>
-            )}
-            <span className="truncate text-slate-500">· {h.sources.join(", ")}</span>
-          </div>
-        </div>
+  if (error && !loading) {
+    return (
+      <div className="flex items-center gap-2 text-caption">
+        {capsule}
+        <p role="alert" className="min-w-0 truncate text-red" title={error}>
+          Live signals unavailable ({error})
+        </p>
       </div>
-      <p className={`mt-1.5 text-slate-400 ${open ? "" : "line-clamp-2"}`}>{h.rationale}</p>
-      {open && (
-        <div className="mt-2 space-y-1 border-t border-white/10 pt-2">
-          {h.confidenceReason && <p className="text-[11px]" style={{ color: confColor(h.confidenceScore) }}>{h.confidenceReason}</p>}
-          {h.model && (
-            <p className="rounded bg-white/5 p-1.5 text-[11px] text-slate-300">
-              <b>Trained model ({h.model.chokepoint}):</b>{" "}
-              {h.model.observedDrop
-                ? `traffic is already down to ${Math.round((h.model.ratio7 ?? 0) * 100)}% of normal.`
-                : `${((h.model.probability ?? 0) * 100).toFixed(1)}% chance of a sustained traffic collapse within ${h.model.horizonDays} days`}
-              {h.model.forecast && ` · next-7-day traffic ≈ ${Math.round(h.model.forecast.q50 * 100)}% of normal (80% range ${Math.round(h.model.forecast.q10 * 100)}–${Math.round(h.model.forecast.q90 * 100)}%)`}
-              {h.model.newsSurge !== null && h.model.newsSurge >= 2 && ` · headline volume ${h.model.newsSurge.toFixed(1)}× normal`}
-            </p>
-          )}
-          <div className="flex gap-3 font-mono text-[10px] text-slate-500">
-            <span>signals {h.signalScore}</span>
-            {h.aiScore !== undefined && <span className="text-violet-300">gemini {h.aiScore}</span>}
-            <span>radius {h.radiusKm} km</span>
-          </div>
-          {h.evidence.map((e, i) => (
-            <div key={i} className="text-[11px] leading-snug">
-              <span className="text-slate-500">{e.time ? `${ago(e.time)} · ` : ""}{e.source}: </span>
-              {e.url ? (
-                <a href={e.url} target="_blank" rel="noreferrer" onClick={(ev) => ev.stopPropagation()} className="text-slate-300 hover:underline">
-                  {e.text}
-                </a>
-              ) : (
-                <span className="text-slate-300">{e.text}</span>
-              )}
-            </div>
-          ))}
-        </div>
+    );
+  }
+  if (!signals) {
+    return (
+      <div className="flex items-center gap-2 text-caption text-ink-3">
+        {capsule}
+        <p>Loading live signals…</p>
+      </div>
+    );
+  }
+  const live = signals.sources.filter((s) => s.ok && !s.fallback).length;
+  const snap = signals.sources.filter((s) => s.fallback).length;
+  return (
+    <div className="flex min-w-0 items-center gap-2 text-caption text-ink-3">
+      {capsule}
+      {signals.demo ? (
+        // the capsule already says it is a scenario; keep the line short so it never truncates
+        <p className="num min-w-0 truncate" title="Scenario data, not live">
+          {signals.hazards.length} hazards · {loading ? "updating…" : ago(signals.generatedAt)}
+        </p>
+      ) : (
+        <p className="num min-w-0 truncate" title={signals.ai.model ? `AI model: ${signals.ai.model}` : signals.ai.note}>
+          {live}/{signals.sources.length} sources live
+          {snap > 0 && <span className="text-yellow"> · {snap} on snapshot</span>}
+          {" · "}
+          {signals.hazards.length} hazards · {loading ? "updating…" : ago(signals.generatedAt)}
+          {" · "}
+          {signals.ai.model ? "AI on" : "AI off"}
+        </p>
       )}
     </div>
   );
 }
 
-function RouteCard({ r, base, active, recommended, backup, onClick }: { r: PlannedRoute; base: PlannedRoute; active: boolean; recommended: boolean; backup: boolean; onClick: () => void }) {
-  const m = r.metrics, b = base.metrics;
-  const dd = m.days - b.days;
-  const dc = m.totalExpectedUsd - b.totalExpectedUsd;
+function VoyageSummary({ form, open, onToggle }: { form: VoyageFormState; open: boolean; onToggle: () => void }) {
   return (
-    <button onClick={onClick} className={`w-full rounded-lg border p-2 text-left transition ${active ? "border-white/30 bg-white/[0.07]" : "border-white/5 bg-white/[0.02] hover:bg-white/[0.05]"}`}>
-      <div className="flex items-center gap-2">
-        <span className="h-2.5 w-2.5 rounded-full" style={{ background: ROUTE_COLORS[r.id] }} />
-        <span className="font-medium text-slate-100">{r.label}</span>
-        {recommended && <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] text-emerald-300">recommended</span>}
-        {backup && <span className="rounded bg-sky-500/20 px-1.5 py-0.5 text-[10px] text-sky-300">backup</span>}
-        <span className="ml-auto font-mono text-sm font-bold" style={{ color: riskColor(m.riskScore) }}>
-          {m.riskScore}
+    <button type="button" aria-expanded={open} onClick={onToggle} className="group-inset flex w-full items-center gap-3 px-3 py-2.5 text-left">
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5 text-body font-semibold text-ink">
+          <span className="truncate">{portName(form.originId)}</span>
+          <ArrowRight aria-hidden size={14} strokeWidth={1.75} className="shrink-0 text-ink-3" />
+          <span className="truncate">{portName(form.destinationId)}</span>
         </span>
-      </div>
-      <div className="mt-1.5 h-1 overflow-hidden rounded bg-white/10">
-        <div className="h-full" style={{ width: `${m.riskScore}%`, background: riskColor(m.riskScore) }} />
-      </div>
-      <div className="mt-1.5 grid grid-cols-4 gap-1 font-mono text-[10px] text-slate-400">
-        <span>{m.km.toLocaleString()} km</span>
-        <span>
-          {m.days} d{r.id !== "original" && <span className={dd > 0 ? "text-amber-300" : "text-emerald-300"}> {dd >= 0 ? "+" : ""}{dd.toFixed(1)}</span>}
+        <span className="num block truncate text-caption text-ink-3">
+          {form.cargo} · {usd(form.cargoValueUsd)}
+          {form.critical && " · Critical"}
         </span>
-        <span title="expected total cost">{usd(m.totalExpectedUsd)}</span>
-        <span className={r.id === "original" ? "" : dc < 0 ? "text-emerald-300" : "text-rose-300"}>{r.id === "original" ? `war ${usd(m.warRiskPremiumUsd)}` : `${dc < 0 ? "saves" : "+"} ${usd(Math.abs(dc))}`}</span>
-      </div>
-      {m.chokepoints.length > 0 && <div className="mt-1 truncate text-[10px] text-slate-500">via {m.chokepoints.join(" · ")}</div>}
+      </span>
+      <span className="shrink-0 text-callout font-medium text-link">{open ? "Done" : "Edit"}</span>
     </button>
   );
 }
 
-function FilteringCard({ f }: { f: NonNullable<SignalsResponse["filtering"]> }) {
+type ControlProps = { baseMap: BaseMap; onBaseMap: (b: BaseMap) => void; pickMode: boolean; onPick: (on: boolean) => void; demo: boolean; onDemo: (on: boolean) => void };
+
+function MapControls({ baseMap, onBaseMap, pickMode, onPick, demo, onDemo }: ControlProps) {
   return (
-    <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
-      <p className="font-medium text-slate-200">False-alarm filtering</p>
-      <p className="mt-1 text-slate-400">
-        {f.screened} signals screened · <span className="text-amber-300">{f.flagged} flagged</span> · <span className="text-emerald-300">{f.dismissed.length} dismissed</span> as not a real threat to ships.
-      </p>
-      <ul className="mt-1 space-y-1">
-        {f.dismissed.map((d) => (
-          <li key={d.id} className="text-[11px] leading-snug text-slate-500">
-            <span className="text-slate-300">{d.title}:</span> {d.reason}
-          </li>
-        ))}
-      </ul>
+    <div className="material-control flex items-center gap-2 rounded-xl p-1.5">
+      <Segmented mode="pressed" label="Map style" options={MAP_STYLES} value={baseMap} onChange={onBaseMap} />
+      <span aria-hidden className="h-5 w-px bg-separator" />
+      <button type="button" aria-pressed={pickMode} onClick={() => onPick(!pickMode)} className={`btn h-7 px-2.5 ${pickMode ? "bg-pink/25" : "bg-transparent hover:bg-fill-2"}`}>
+        <Crosshair size={15} strokeWidth={1.75} className={pickMode ? "text-pink" : "text-ink-2"} />
+        Simulate strike
+      </button>
+      <span aria-hidden className="h-5 w-px bg-separator" />
+      <label htmlFor="demo-switch-wide" className="cursor-pointer pl-0.5 text-caption font-medium text-ink-2">
+        Demo
+      </label>
+      <span className="pr-1">
+        <Switch id="demo-switch-wide" size="sm" checked={demo} onChange={onDemo} />
+      </span>
     </div>
   );
 }
 
-type Sys = { label: string; precision: number; recall: number; f1: number; falseAlarmRate: number; events: number; detected: number; warnedEarly: number; medianLeadDays: number; falseAlertsPerYear: number };
-function BacktestCard() {
-  const h = backtest.H14;
-  const rows = ["vantage", "app", "naive15", "naive"].map((k) => (h.systems as unknown as Record<string, Sys>)[k]);
-  const p = h.probability;
+function CompactControls({ baseMap, onBaseMap, pickMode, onPick, demo, onDemo }: ControlProps) {
+  const [menu, setMenu] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menu) return;
+    const away = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setMenu(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setMenu(false);
+    document.addEventListener("pointerdown", away);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", away);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [menu]);
   return (
-    <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
-      <p className="font-medium text-slate-200">Measured accuracy (walk-forward backtest)</p>
-      <p className="mt-1 text-slate-500">
-        IMF PortWatch daily transits at 28 chokepoints, quarterly retraining from {backtest.foldsFrom} to Oct 2026, no future leakage. Task: will a chokepoint lose 30%+ of its traffic for a week within 14 days? Lead time is measured against the first day traffic visibly falls.
-      </p>
-      <div className="mt-1.5 overflow-x-auto">
-        <table className="w-full text-left text-[10px]">
-          <thead className="text-slate-500">
-            <tr><th className="py-1 pr-1">System</th><th className="pr-1">Prec.</th><th className="pr-1">Recall</th><th className="pr-1">False-alarm</th><th className="pr-1">Warned early</th><th className="pr-1">False alerts/yr</th></tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.label} className={`border-t border-white/5 ${r.label.startsWith("Vantage") ? "text-cyan-200" : "text-slate-400"}`}>
-                <td className="py-1 pr-1">{r.label}</td>
-                <td className="pr-1 font-mono">{(r.precision * 100).toFixed(0)}%</td>
-                <td className="pr-1 font-mono">{(r.recall * 100).toFixed(0)}%</td>
-                <td className="pr-1 font-mono">{(r.falseAlarmRate * 100).toFixed(1)}%</td>
-                <td className="pr-1 font-mono">{r.warnedEarly}/{r.events}</td>
-                <td className="pr-1 font-mono">{r.falseAlertsPerYear.toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div ref={ref} className="relative">
+      <div className="material-control flex items-center gap-0.5 rounded-xl p-1">
+        <button type="button" className="btn-plain h-8 w-8 p-0 text-ink" aria-label="Map style" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
+          <Layers {...ICON} />
+        </button>
+        <button
+          type="button"
+          aria-label="Simulate strike"
+          aria-pressed={pickMode}
+          onClick={() => onPick(!pickMode)}
+          className={`btn-plain h-8 w-8 p-0 ${pickMode ? "bg-pink/25 text-pink" : "text-ink"}`}
+        >
+          <Crosshair {...ICON} />
+        </button>
+        <span aria-hidden className="mx-1 h-5 w-px bg-separator" />
+        <label htmlFor="demo-switch-compact" className="cursor-pointer text-caption font-medium text-ink-2">
+          Demo
+        </label>
+        <span className="px-1.5">
+          <Switch id="demo-switch-compact" size="sm" checked={demo} onChange={onDemo} />
+        </span>
       </div>
-      <p className="mt-1 text-slate-500">
-        Model probability: ROC-AUC {p.roc_auc.toFixed(2)}, PR-AUC {p.pr_auc.toFixed(3)} ({p.pr_auc_lift.toFixed(0)}× the {(p.base_rate * 100).toFixed(1)}% base rate), Brier skill {(p.brier_skill * 100).toFixed(1)}%. Full report: ml/README.md.
-      </p>
+      <AnimatePresence>
+        {menu && (
+          <motion.div
+            className="material-control absolute right-0 top-full mt-2 rounded-xl p-1.5"
+            style={{ transformOrigin: "top right" }}
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ type: "spring", bounce: 0, duration: 0.25 }}
+          >
+            <Segmented
+              mode="pressed"
+              label="Map style"
+              options={MAP_STYLES}
+              value={baseMap}
+              onChange={(b) => {
+                onBaseMap(b);
+                setMenu(false);
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function AisCard({ ais }: { ais: AisSnapshot | null }) {
-  if (!ais) return null;
-  const flagged = ais.regions.filter((r) => r.anomalies.length);
+function LegendItem({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
-      <p className="font-medium text-slate-200">Live ships (AIS)</p>
-      {!ais.configured ? (
-        <p className="mt-1 text-slate-500">{ais.note}</p>
-      ) : !ais.ok ? (
-        <p className="mt-1 text-amber-300">{ais.note}</p>
-      ) : (
-        <>
-          <p className="mt-1 text-slate-400">
-            {ais.shipCount} ships sampled over {ais.seconds}s in {ais.regions.filter((r) => r.ships > 0).length} watch zones · {flagged.length} zone(s) with anomalies.
-          </p>
-          <ul className="mt-1 space-y-1">
-            {flagged.map((r) => (
-              <li key={r.id} className="text-[11px] leading-snug text-slate-500">
-                <span className="text-slate-300">{r.name}:</span> {r.anomalies.map((a) => a.detail).join("; ")}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </div>
+    <li className="flex items-center gap-1.5 whitespace-nowrap">
+      {children}
+      {label}
+    </li>
   );
 }

@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-11T00:00:00Z",
+  "title": "Design System: Vantage",
+  "extensions": {
+    "colorMeta": {
+      "accent": { "role": "primary", "displayName": "System Blue", "canonical": "#0a84ff", "tonalRamp": ["#00244a", "#003a75", "#0052a3", "#006ad1", "#0a84ff", "#409cff", "#85c0ff", "#cfe6ff"] },
+      "accent-hover": { "role": "primary", "displayName": "Light System Blue", "canonical": "#409cff" },
+      "link": { "role": "primary", "displayName": "Link Blue", "canonical": "#409cff" },
+      "red": { "role": "secondary", "displayName": "System Red (Severe, Reroute, Down)", "canonical": "#ff453a", "tonalRamp": ["#4a0904", "#7a1009", "#a8180f", "#d42318", "#ff453a", "#ff7a72", "#ffaea9", "#ffe0de"] },
+      "orange": { "role": "secondary", "displayName": "System Orange (High)", "canonical": "#ff9f0a", "tonalRamp": ["#4a2c00", "#754600", "#a36200", "#d17e00", "#ff9f0a", "#ffb84d", "#ffd391", "#ffeed4"] },
+      "yellow": { "role": "secondary", "displayName": "System Yellow (Elevated, Checkpoint, Snapshot)", "canonical": "#ffd60a", "tonalRamp": ["#4a3d00", "#756100", "#a38700", "#d1ad00", "#ffd60a", "#ffe24d", "#ffed91", "#fff8d4"] },
+      "green": { "role": "secondary", "displayName": "System Green (Low, Proceed, Live)", "canonical": "#30d158", "tonalRamp": ["#063d14", "#0b6122", "#118731", "#1aad41", "#30d158", "#66de86", "#9eeab2", "#d8f7e0"] },
+      "pink": { "role": "tertiary", "displayName": "System Pink (Simulated strike)", "canonical": "#ff375f" },
+      "cyan": { "role": "tertiary", "displayName": "System Cyan (Cyclone, Cargo)", "canonical": "#64d2ff" },
+      "indigo": { "role": "tertiary", "displayName": "System Indigo (Severe weather)", "canonical": "#5e5ce6" },
+      "purple": { "role": "tertiary", "displayName": "System Purple (Earthquake)", "canonical": "#bf5af2" },
+      "mint": { "role": "tertiary", "displayName": "System Mint (Sea ice)", "canonical": "#63e6e2" },
+      "teal": { "role": "tertiary", "displayName": "System Teal (AIS anomaly)", "canonical": "#40c8e0" },
+      "gray": { "role": "neutral", "displayName": "System Gray (Alternative route)", "canonical": "#8e8e93" },
+      "route-original": { "role": "neutral", "displayName": "Original Route Gray", "canonical": "#d1d1d6" },
+      "segment-selected": { "role": "neutral", "displayName": "Segment Thumb Gray", "canonical": "#636366" },
+      "space": { "role": "neutral", "displayName": "Space", "canonical": "#000", "tonalRamp": ["#000000", "#0b0b0d", "#1c1c1e", "#2c2c2e", "#3a3a3c", "#636366", "#8e8e93", "#f5f5f7"] },
+      "elevated": { "role": "neutral", "displayName": "Elevated Gray", "canonical": "#1c1c1e" },
+      "elevated-2": { "role": "neutral", "displayName": "Elevated Gray 2", "canonical": "#2c2c2e" },
+      "elevated-3": { "role": "neutral", "displayName": "Elevated Gray 3", "canonical": "#3a3a3c" },
+      "material-thick": { "role": "neutral", "displayName": "Thick Dark Material", "canonical": "rgb(28 28 30 / 0.72)" },
+      "material-regular": { "role": "neutral", "displayName": "Regular Dark Material", "canonical": "rgb(36 36 38 / 0.62)" },
+      "ink": { "role": "neutral", "displayName": "Label", "canonical": "#f5f5f7" },
+      "ink-2": { "role": "neutral", "displayName": "Secondary Label", "canonical": "rgb(235 235 245 / 0.64)" },
+      "ink-3": { "role": "neutral", "displayName": "Tertiary Label", "canonical": "rgb(235 235 245 / 0.5)" },
+      "ink-4": { "role": "neutral", "displayName": "Quaternary Label", "canonical": "rgb(235 235 245 / 0.28)" },
+      "fill": { "role": "neutral", "displayName": "Fill", "canonical": "rgb(120 120 128 / 0.32)" },
+      "fill-2": { "role": "neutral", "displayName": "Secondary Fill", "canonical": "rgb(120 120 128 / 0.2)" },
+      "fill-3": { "role": "neutral", "displayName": "Tertiary Fill", "canonical": "rgb(120 120 128 / 0.12)" },
+      "separator": { "role": "neutral", "displayName": "Separator", "canonical": "rgb(84 84 88 / 0.55)" },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "rgb(255 255 255 / 0.08)" }
+    },
+    "typographyMeta": {
+      "large": { "displayName": "Large", "purpose": "The one-sentence decision at the top of a plan, coloured by its decision." },
+      "headline": { "displayName": "Headline", "purpose": "The Vantage wordmark and the mobile peek decision." },
+      "body": { "displayName": "Body", "purpose": "Explanatory paragraphs; the primary button label at 590." },
+      "callout": { "displayName": "Callout", "purpose": "Row titles, inputs, buttons, disclosure headers." },
+      "caption": { "displayName": "Caption", "purpose": "Metadata, status line, legend, segmented labels." },
+      "micro": { "displayName": "Micro", "purpose": "Capsules and map credits." },
+      "coordinate": { "displayName": "Coordinate", "purpose": "Latitude and longitude and inline code only; never for figures." }
+    },
+    "shadows": [
+      { "name": "panel", "value": "inset 0 0.5px 0 rgb(255 255 255 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.6), 0 16px 48px rgb(0 0 0 / 0.5), 0 2px 8px rgb(0 0 0 / 0.3)", "purpose": "Thick material: sidebar, sheet, floating ship card (with the light top edge)." },
+      { "name": "control", "value": "inset 0 0.5px 0 rgb(255 255 255 / 0.12), 0 0 0 0.5px rgb(0 0 0 / 0.5), 0 6px 20px rgb(0 0 0 / 0.4)", "purpose": "Regular material: map controls, legend pill, strike hint." },
+      { "name": "segment-thumb", "value": "0 1px 3px rgb(0 0 0 / 0.35), inset 0 0.5px 0 rgb(255 255 255 / 0.14)", "purpose": "The raised selected item of a segmented control." },
+      { "name": "switch-knob", "value": "0 2px 6px rgb(0 0 0 / 0.28), 0 0 0 0.5px rgb(0 0 0 / 0.06)", "purpose": "Switch thumb." },
+      { "name": "focus-ring", "value": "0 0 0 3px rgb(10 132 255 / 0.55)", "purpose": "Keyboard focus everywhere; rows inside a group use inset 0 0 0 2px var(--color-accent)." }
+    ],
+    "materials": [
+      { "name": "thick", "value": "background: rgb(28 28 30 / 0.72); backdrop-filter: blur(40px) saturate(180%)", "purpose": "Sidebar, sheet, floating ship card." },
+      { "name": "regular", "value": "background: rgb(36 36 38 / 0.62); backdrop-filter: blur(24px) saturate(180%)", "purpose": "Small floating controls over the globe." },
+      { "name": "map-label", "value": "rgba(28,28,30,0.78), 6px radius, 0.5px rgba(255,255,255,0.1) edge (1px rgba(255,255,255,0.55) when selected)", "purpose": "Canvas-drawn globe label pills." }
+    ],
+    "motion": [
+      { "name": "ease-sheet", "value": "cubic-bezier(0.32, 0.72, 0, 1)", "purpose": "iOS sheet curve for CSS transitions." },
+      { "name": "ease-out", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Soft exponential ease-out for hovers, presses, fills (120 to 200ms)." },
+      { "name": "ease-in-out", "value": "cubic-bezier(0.65, 0, 0.35, 1)", "purpose": "Symmetric transitions." },
+      { "name": "panel-spring", "value": "spring, bounce 0, duration 0.35s", "purpose": "Sidebar entry, floating cards, legend, disclosures, sheet detents." },
+      { "name": "switch-spring", "value": "spring, bounce 0, duration 0.3s", "purpose": "Switch thumb travel." },
+      { "name": "flick-spring", "value": "spring, bounce 0.15, duration 0.35s, carries release velocity", "purpose": "Sheet release only when velocity exceeds 700 px/s." },
+      { "name": "press", "value": "transform: scale(0.97), 120ms ease-out", "purpose": "Button feedback on pointer-down." },
+      { "name": "idle-spin", "value": "starts 12s after last input; 360deg per 240s eastward; critically damped ramp, w0 = 2 rad/s (about 2.4s to 95%); stops instantly on pointer, wheel, touch or key", "purpose": "Signature idle earth; off under reduced motion, during flights, strike picking and ship selection." },
+      { "name": "hazard-breathe", "value": "8s cycle, a few percent of alpha", "purpose": "High-risk zones only; calm, never a strobe." }
+    ],
+    "breakpoints": [
+      { "name": "compact", "value": "767px", "purpose": "Compact globe labels and smaller credits at and below." },
+      { "name": "lg", "value": "1024px", "purpose": "Sidebar and full map controls at and above; bottom sheet below." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action per view (Assess Route), full width in the voyage form.",
+      "html": "<button class=\"ds-btn-primary\">Assess Route</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 14px; border: none; border-radius: 12px; background: #0a84ff; color: #fff; font: 590 14px/21px -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, 'Segoe UI', sans-serif; letter-spacing: -0.006em; cursor: pointer; transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1), background-color 150ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-btn-primary:hover { background: #409cff; } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgb(10 132 255 / 0.55); } .ds-btn-primary:disabled { opacity: 0.4; }"
+    },
+    {
+      "name": "Gray Button",
+      "kind": "button",
+      "refersTo": "button-gray",
+      "description": "Secondary actions on a fill.",
+      "html": "<button class=\"ds-btn\">Clear strikes</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border: none; border-radius: 8px; background: rgb(120 120 128 / 0.32); color: #f5f5f7; font: 590 13px/18px -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif; letter-spacing: -0.003em; cursor: pointer; transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1), background-color 150ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-btn:hover { background: rgb(120 120 128 / 0.42); } .ds-btn:active { transform: scale(0.97); } .ds-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgb(10 132 255 / 0.55); }"
+    },
+    {
+      "name": "Plain Button",
+      "kind": "button",
+      "refersTo": "button-plain",
+      "description": "Link-blue text actions such as Edit and Retry.",
+      "html": "<button class=\"ds-btn-plain\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8\"/><path d=\"M21 3v5h-5\"/></svg>Retry</button>",
+      "css": ".ds-btn-plain { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 8px; border: none; border-radius: 8px; background: transparent; color: #409cff; font: 590 13px/18px -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif; cursor: pointer; transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1), background-color 150ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-btn-plain:hover { background: rgb(120 120 128 / 0.12); } .ds-btn-plain:active { transform: scale(0.97); } .ds-btn-plain:focus-visible { outline: none; box-shadow: 0 0 0 3px rgb(10 132 255 / 0.55); }"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Filled field, no stroke, tabular numerals.",
+      "html": "<input class=\"ds-input\" placeholder=\"Cargo value (USD)\" />",
+      "css": ".ds-input { width: 240px; height: 32px; padding: 0 10px; border: none; border-radius: 8px; background: rgb(120 120 128 / 0.2); color: #f5f5f7; font: 400 13px/18px -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif; font-variant-numeric: tabular-nums; outline: none; transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 150ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-input::placeholder { color: rgb(235 235 245 / 0.5); } .ds-input:hover { background: rgb(120 120 128 / 0.32); } .ds-input:focus-visible, .ds-input:focus { box-shadow: 0 0 0 3px rgb(10 132 255 / 0.55); }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "nav",
+      "refersTo": "segmented",
+      "description": "Panel tabs and map style; the selected item rises as a gray thumb.",
+      "html": "<div class=\"ds-seg\" role=\"tablist\"><button role=\"tab\" aria-selected=\"true\">Voyage</button><button role=\"tab\" aria-selected=\"false\">Threats</button><button role=\"tab\" aria-selected=\"false\">Sources</button></div>",
+      "css": ".ds-seg { display: flex; gap: 2px; padding: 2px; width: 340px; border-radius: 9px; background: rgb(120 120 128 / 0.2); } .ds-seg > button { flex: 1; height: 28px; padding: 0 12px; border: none; border-radius: 7px; background: transparent; color: rgb(235 235 245 / 0.64); font: 510 12px/16px -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif; cursor: pointer; transition: background-color 200ms cubic-bezier(0.22, 1, 0.36, 1), color 200ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-seg > button:hover { color: #f5f5f7; } .ds-seg > button[aria-selected=\"true\"] { background: #636366; color: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / 0.35), inset 0 0.5px 0 rgb(255 255 255 / 0.14); } .ds-seg > button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgb(10 132 255 / 0.55); }"
+    },
+    {
+      "name": "Capsules",
+      "kind": "chip",
+      "refersTo": "capsule-demo",
+      "description": "Status labels: neutral, accent (Recommended), demo (neutral fill with a flask icon, never yellow).",
+      "html": "<span class=\"ds-cap ds-cap-demo\"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10 2v7.31\"/><path d=\"M14 9.3V1.99\"/><path d=\"M8.5 2h7\"/><path d=\"M14 9.3a6.5 6.5 0 1 1-4 0\"/><path d=\"M5.52 16h12.96\"/></svg>Demo scenario</span> <span class=\"ds-cap ds-cap-accent\">Recommended</span> <span class=\"ds-cap\">Backup</span>",
+      "css": ".ds-cap { display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 8px; border-radius: 9999px; background: rgb(120 120 128 / 0.32); color: rgb(235 235 245 / 0.64); font: 600 11px/14px -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif; letter-spacing: 0.006em; } .ds-cap-demo { color: #f5f5f7; } .ds-cap-demo svg { color: rgb(235 235 245 / 0.64); margin-left: -2px; } .ds-cap-accent { background: rgb(10 132 255 / 0.25); color: #f5f5f7; }"
+    },
+    {
+      "name": "Grouped Inset List",
+      "kind": "card",
+      "refersTo": "group-inset",
+      "description": "iOS Settings style group: rows on a fill, divided by an inset hairline; holds routes, threats, sources.",
+      "html": "<ul class=\"ds-group\"><li><span class=\"ds-dot\" style=\"background:#30d158\"></span>IMF PortWatch<span class=\"ds-meta\">Live</span></li><li><span class=\"ds-dot\" style=\"background:#ffd60a\"></span>GDELT<span class=\"ds-meta\">Snapshot, 2 h ago</span></li><li><span class=\"ds-dot\" style=\"background:#ff453a\"></span>NASA EONET<span class=\"ds-meta\">Down</span></li></ul>",
+      "css": ".ds-group { list-style: none; margin: 0; padding: 0; width: 340px; border-radius: 12px; overflow: hidden; background: rgb(120 120 128 / 0.12); font: 400 13px/18px -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif; color: #f5f5f7; } .ds-group > li { display: flex; align-items: center; gap: 8px; padding: 10px 12px; transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-group > li + li { box-shadow: inset 0 0.5px 0 rgb(84 84 88 / 0.55); } .ds-group > li:hover { background: rgb(120 120 128 / 0.12); } .ds-dot { width: 8px; height: 8px; border-radius: 9999px; flex: none; } .ds-meta { margin-left: auto; font-size: 12px; color: rgb(235 235 245 / 0.5); }"
+    },
+    {
+      "name": "Switch",
+      "kind": "custom",
+      "refersTo": "switch-on",
+      "description": "iOS switch: fill track off, System Green on, white knob on a critically damped spring.",
+      "html": "<button class=\"ds-switch\" role=\"switch\" aria-checked=\"true\" aria-label=\"Demo\"><span></span></button>",
+      "css": ".ds-switch { position: relative; width: 46px; height: 28px; border: none; border-radius: 9999px; background: rgb(120 120 128 / 0.32); cursor: pointer; transition: background-color 200ms ease-out; } .ds-switch[aria-checked=\"true\"] { background: #30d158; } .ds-switch span { position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; border-radius: 9999px; background: #fff; box-shadow: 0 2px 6px rgb(0 0 0 / 0.28), 0 0 0 0.5px rgb(0 0 0 / 0.06); transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1); } .ds-switch[aria-checked=\"true\"] span { transform: translateX(18px); } .ds-switch:focus-visible { outline: none; box-shadow: 0 0 0 3px rgb(10 132 255 / 0.55); }"
+    },
+    {
+      "name": "Sidebar Material",
+      "kind": "custom",
+      "refersTo": "sidebar",
+      "description": "Thick dark material floating over the globe, with a light top edge and the decision in Large type.",
+      "html": "<aside class=\"ds-sidebar\"><div class=\"ds-brand\">Vantage</div><div class=\"ds-status\">5/6 sources live · 31 hazards · just now · AI on</div><div class=\"ds-decision\">Reroute now</div><p class=\"ds-body\">Reroute via the Cape of Good Hope to avoid armed conflict and piracy on the Suez route.</p></aside>",
+      "css": ".ds-sidebar { width: 348px; padding: 14px 16px 16px; border-radius: 22px; background: rgb(28 28 30 / 0.72); -webkit-backdrop-filter: blur(40px) saturate(180%); backdrop-filter: blur(40px) saturate(180%); box-shadow: inset 0 0.5px 0 rgb(255 255 255 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.6), 0 16px 48px rgb(0 0 0 / 0.5), 0 2px 8px rgb(0 0 0 / 0.3); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', Inter, sans-serif; color: #f5f5f7; } .ds-brand { font: 600 17px/22px -apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, sans-serif; letter-spacing: -0.012em; } .ds-status { margin-top: 2px; font-size: 12px; line-height: 16px; color: rgb(235 235 245 / 0.5); font-variant-numeric: tabular-nums; } .ds-decision { margin-top: 16px; font: 600 28px/34px -apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, sans-serif; letter-spacing: -0.025em; color: #ff453a; } .ds-body { margin: 8px 0 0; font-size: 14px; line-height: 21px; letter-spacing: -0.006em; color: rgb(235 235 245 / 0.64); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Earth Is the Canvas",
+    "overview": "Vantage behaves like Apple Maps on macOS in dark appearance. The globe runs full-bleed over black space on an Esri dark-gray basemap and is the content; one translucent sidebar (a bottom sheet on phones) carries the whole decision, and a few small floating controls sit over the map. Everything that is not the earth is Apple's thick dark material: blurred, saturated glass with a half-pixel light edge and a soft, deep shadow.\n\nThe system is calm and dense in the way an operating tool is dense: Apple's label opacities do the hierarchy, grouped inset lists (iOS Settings style) hold rows, and colour only appears where it carries meaning (an action, a risk band, a hazard category, a source state). It deliberately rejects the dark \"command center\" default: no neon, no monospace as an aesthetic, no three always-open panels fighting the globe.\n\nMotion is physical and quiet. Panels, the sheet, switches and disclosures move on critically damped springs (0.3 to 0.35 s, no bounce); a slight bounce appears only after a flick carries momentum. The idle earth is the signature: after 12 s without input it eases into a slow eastward turn and stops the instant anyone touches anything.",
+    "keyCharacteristics": [
+      "Full-bleed globe; UI floats on it in thick dark material with a 0.5px light top edge.",
+      "One sidebar (380px, inset 12px from the edges) on desktop; a three-detent bottom sheet on mobile.",
+      "Apple dark system colours, used only for jobs; neutrals are Apple's label and fill opacities.",
+      "SF Pro through the system stack, Inter off-Apple; size-specific tracking; tabular numerals instead of mono.",
+      "Line icons at one stroke weight (1.75), never emoji or glyph icons.",
+      "Honest state is always visible: live, snapshot, down, scenario (demo), simulated."
+    ],
+    "rules": [
+      { "name": "The Colour Does a Job Rule", "body": "Every hue on screen answers a question: what to press, how risky, what kind of hazard, whether a source is live. Decorative colour does not exist here.", "section": "colors" },
+      { "name": "The Route Role Rule", "body": "Routes are coloured by role, never by id: selected is blue over a dark casing (#0a3d7a), the original is a light dashed line, every other alternative is muted gray. This keeps yellow, teal and purple free for risk and hazards.", "section": "colors" },
+      { "name": "The Honest State Rule", "body": "Data provenance is always visible and uses one vocabulary: **live** (green), **snapshot** (yellow, with its age), **down** (red), **scenario** for demo data, and **simulated** for user-placed strikes (pink on the globe). The demo capsule is a neutral fill with a flask icon, never yellow, so a scenario never reads as a warning.", "section": "colors" },
+      { "name": "The Cleared Palette Rule", "body": "The default Tailwind palette, type scale and radii are cleared in the theme. Draw only from these tokens; no slate-400, no arbitrary hex in components (Cesium, which needs literals, reads the mirrored values in components/colors.ts).", "section": "colors" },
+      { "name": "The Tabular Numbers Rule", "body": "Figures (risk scores, days, costs, counts, confidence) use tabular numerals in the sans face, never a monospace face. Mono is reserved for coordinates and code.", "section": "typography" },
+      { "name": "The Weight Ladder Rule", "body": "Weights are 400, 510, 590 and 600 (Apple's regular, medium, semibold steps). Hierarchy comes from size, weight and label opacity together, not from uppercase or letter-spaced labels.", "section": "typography" },
+      { "name": "The Glass Only Floats Rule", "body": "Material is for things that float over the earth (sidebar, sheet, controls, legend, ship card). Nothing inside the material gets its own shadow or glass; nesting is shown with fills and hairlines.", "section": "elevation" }
+    ],
+    "dos": [
+      "**Do** let the globe stay full-bleed and put all chrome in thick dark material floating over it.",
+      "**Do** use System Blue only for the action and the selected route, and the red / orange / yellow / green bands only for risk, decisions, confidence and source state.",
+      "**Do** colour routes by role: blue selected over a #0a3d7a casing, light dashed original, gray alternatives.",
+      "**Do** show provenance with the honest-state vocabulary (live, snapshot, down, scenario, simulated) wherever data appears.",
+      "**Do** render the demo capsule as a neutral fill with a flask icon.",
+      "**Do** use tabular numerals for every figure, and line icons at a 1.75 stroke.",
+      "**Do** move panels on critically damped springs (0.3 to 0.35 s) and CSS transitions on the iOS sheet curve cubic-bezier(0.32, 0.72, 0, 1) or the soft ease-out cubic-bezier(0.22, 1, 0.36, 1); honour reduced motion, reduced transparency and increased contrast."
+    ],
+    "donts": [
+      "**Don't** make a scenario or demo state yellow; yellow means elevated risk or a snapshot source.",
+      "**Don't** colour routes by id or use yellow, teal or purple for a route.",
+      "**Don't** use the default Tailwind palette or arbitrary hex in components.",
+      "**Don't** use monospace for numbers, neon accents, or emoji and glyph icons.",
+      "**Don't** add uppercase, letter-spaced kicker labels above headings; hierarchy comes from size, weight and label opacity.",
+      "**Don't** nest glass in glass or put shadows on rows and groups inside the material.",
+      "**Don't** let the idle spin fight the user: any input stops it, and it never runs during a camera flight, strike picking or reduced motion."
+    ]
+  }
+}

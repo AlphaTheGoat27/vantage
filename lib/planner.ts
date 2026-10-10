@@ -460,8 +460,15 @@ export async function planShipment(
   }
 
   const alternatives = [aiRoute, safest, balanced].filter((r): r is PlannedRoute => Boolean(r));
+  // Gemini's route is the backup unless a router alternative beats it on risk, cost and days at once
+  // (never recommend a route another valid route dominates)
+  const dominates = (a: PlannedRoute, b: PlannedRoute) => {
+    const x = a.metrics, y = b.metrics;
+    return x.riskScore <= y.riskScore && x.totalExpectedUsd <= y.totalExpectedUsd && x.days <= y.days && (x.riskScore < y.riskScore || x.totalExpectedUsd < y.totalExpectedUsd || x.days < y.days);
+  };
+  const aiBackup = aiRoute && !alternatives.some((r) => r !== aiRoute && dominates(r, aiRoute)) ? aiRoute : undefined;
   const backup =
-    aiRoute ??
+    aiBackup ??
     alternatives.filter((r) => r.metrics.riskScore < original.metrics.riskScore).sort((a, b) => a.metrics.totalExpectedUsd - b.metrics.totalExpectedUsd)[0] ??
     safest ??
     original;
