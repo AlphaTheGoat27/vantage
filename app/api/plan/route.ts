@@ -1,6 +1,7 @@
+import { DEMO_INFO, getDemoSignals, isDemoRequest } from "@/lib/demo";
 import { planShipment } from "@/lib/planner";
 import { getSignals } from "@/lib/signals";
-import type { Hazard, ShipmentInput } from "@/lib/types";
+import type { Hazard, PipelineEvent, PlanResponse, ShipmentInput, SignalsResponse } from "@/lib/types";
 
 export const maxDuration = 60;
 
@@ -9,6 +10,17 @@ const num = (v: unknown, def: number, min: number, max: number) => {
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : def;
 };
 
+/** Demo mode: the Detect stage must not count the scenario's stand-in sources as live feeds. */
+function labelDemoStep(e: PipelineEvent) {
+  if (e.type !== "step" || e.step !== "detect") return;
+  e.summary = e.summary.startsWith("No live hazard")
+    ? "No scenario hazard found near the route (demo scenario, not live data)"
+    : e.summary.replace(/,? from \d+ live sources?$/, " in the hand-authored demo scenario (not live data)");
+  e.sourcesLive = 0;
+  e.sourcesFallback = 0;
+  e.sourcesDown = 0;
+}
+
 export async function POST(req: Request) {
   let body: Partial<ShipmentInput>;
   try {
@@ -16,6 +28,11 @@ export async function POST(req: Request) {
   } catch {
     return Response.json({ error: "invalid JSON" }, { status: 400 });
   }
+  // ?demo=1 -> plan against the labeled demo scenario instead of the live feeds (the planner itself still runs for real).
+  // Plans are never cached, so demo and live plans cannot share a cache entry.
+  const demo = isDemoRequest(req);
+  const loadSignals = (): Promise<SignalsResponse> => (demo ? Promise.resolve(getDemoSignals()) : getSignals());
+  const finish = (plan: PlanResponse): PlanResponse => (demo ? { ...plan, demo: { ...DEMO_INFO } } : plan);
   const extra = Array.isArray(body.extraHazards) ? body.extraHazards.slice(0, 10) : [];
   const input: ShipmentInput = {
     originId: String(body.originId ?? ""),
@@ -48,10 +65,18 @@ export async function POST(req: Request) {
       async start(controller) {
         const send = (o: unknown) => controller.enqueue(enc.encode(JSON.stringify(o) + "\n"));
         try {
-          send({ type: "progress", step: "detect", message: "Collecting live signals: ship traffic, news, disaster alerts" });
-          const signals = await getSignals();
-          const plan = await planShipment(input, signals.hazards, signals.chokepoints, { emit: send, sources: signals.sources });
-          send({ type: "result", plan });
+          send(
+            demo
+              ? { type: "progress", step: "detect", message: `Loading the demo scenario "${DEMO_INFO.scenario}" (hand-authored, not live data)` }
+              : { type: "progress", step: "detect", message: "Collecting live signals: ship traffic, news, disaster alerts" },
+          );
+          const signals = await loadSignals();
+          const emit = (e: PipelineEvent) => {
+            if (demo) labelDemoStep(e);
+            send(e);
+          };
+          const plan = await planShipment(input, signals.hazards, signals.chokepoints, { emit, sources: signals.sources });
+          send({ type: "result", plan: finish(plan) });
         } catch (e) {
           send({ type: "error", error: e instanceof Error ? e.message : String(e) });
         }
@@ -61,9 +86,9 @@ export async function POST(req: Request) {
     return new Response(stream, { headers: { "content-type": "application/x-ndjson; charset=utf-8", "cache-control": "no-store" } });
   }
   try {
-    const signals = await getSignals();
-    const plan = await planShipment(input, signals.hazards, signals.chokepoints, { sources: signals.sources });
-    return Response.json(plan);
+    const signals = await loadSignals();
+    const plan = await planShipment(input, signals.hazards, signals.chokepoints, { sources: signals.sources, emit: demo ? labelDemoStep : undefined });
+    return demo ? Response.json(finish(plan), { headers: { "cache-control": "no-store" } }) : Response.json(plan);
   } catch (e) {
     return Response.json({ error: e instanceof Error ? e.message : String(e) }, { status: 422 });
   }

@@ -95,7 +95,12 @@ export type SignalsResponse = {
   chokepoints: Chokepoint[];
   filtering?: Filtering;
   model?: { version: number; trainedThrough: string; horizonDays: number; asOf?: string; ok: boolean; note?: string };
+  /** set only when the labeled demo scenario (?demo=1) replaced the live feeds */
+  demo?: DemoInfo;
 };
+
+/** A hand-authored scenario standing in for the live feeds; the UI must badge it everywhere it shows. */
+export type DemoInfo = { scenario: string; note: string };
 
 export type Port = { id: string; name: string; country: string; center: LonLat; staging?: boolean };
 
@@ -229,4 +234,6 @@ export type PlanResponse = {
   justification: RouteJustification;
   /** the Detect > Predict > Categorize > Prioritize > Decide > Explain trace, in order */
   pipeline: PipelineStep[];
+  /** set only when the plan ran on the labeled demo scenario (?demo=1) */
+  demo?: DemoInfo;
 };
