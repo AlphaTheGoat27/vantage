@@ -2,10 +2,13 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { AisSnapshot } from "@/lib/ais";
 import { PORTS } from "@/lib/places";
 import type { LonLat } from "@/lib/geo";
-import { CATEGORY_LABEL, type Hazard, type PlanResponse, type PlannedRoute, type ShipmentInput, type SignalsResponse } from "@/lib/types";
+import backtest from "@/lib/data/backtest-summary.json";
+import { CATEGORY_LABEL, type Hazard, type PipelineEvent, type PipelineStep, type PipelineStepId, type PlanResponse, type PlannedRoute, type ShipmentInput, type SignalsResponse } from "@/lib/types";
 import type { BaseMap } from "./Globe";
+import PipelinePanel from "./Pipeline";
 import { HAZARD_COLORS, ROUTE_COLORS } from "./colors";
 
 const Globe = dynamic(() => import("./Globe"), { ssr: false });
@@ -16,6 +19,7 @@ const ago = (iso?: string) => {
   const h = (Date.now() - Date.parse(iso)) / 3600_000;
   return h < 1 ? `${Math.max(1, Math.round(h * 60))}m ago` : h < 48 ? `${Math.round(h)}h ago` : `${Math.round(h / 24)}d ago`;
 };
+const confColor = (c?: number) => (c === undefined ? "#94a3b8" : c >= 70 ? "#22e39b" : c >= 45 ? "#facc15" : "#ff9f1a");
 const riskColor = (s: number) => (s >= 70 ? "#ff4d4d" : s >= 45 ? "#ff9f1a" : s >= 25 ? "#facc15" : "#22e39b");
 
 const PRESETS: { label: string; o: string; d: string; cargo: string; value: number; critical: boolean }[] = [
@@ -39,6 +43,9 @@ export default function Dashboard() {
   const [plan, setPlan] = useState<PlanResponse | null>(null);
   const [planErr, setPlanErr] = useState<string | null>(null);
   const [planning, setPlanning] = useState(false);
+  const [ais, setAis] = useState<AisSnapshot | null>(null);
+  const [steps, setSteps] = useState<PipelineStep[]>([]);
+  const [progress, setProgress] = useState<{ step: PipelineStepId; message: string } | null>(null);
   const [activeRoute, setActiveRoute] = useState<PlannedRoute["id"] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [baseMap, setBaseMap] = useState<BaseMap>("dark");
@@ -66,6 +73,22 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    // live AIS ships: sampled server-side for a few seconds, refreshed every 3 minutes (returns configured:false without a key)
+    let alive = true;
+    const pull = () =>
+      fetch("/api/ais")
+        .then((r) => r.json())
+        .then((j: AisSnapshot) => alive && setAis(j))
+        .catch(() => undefined);
+    pull();
+    const t = setInterval(pull, 180_000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, []);
+
+  useEffect(() => {
     // initial live-data load on mount
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadSignals();
@@ -82,16 +105,41 @@ export default function Dashboard() {
       };
       setPlanning(true);
       setPlanErr(null);
+      setSteps([]);
+      setProgress({ step: "detect", message: "Starting…" });
       try {
-        const r = await fetch("/api/plan", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.error ?? `plan ${r.status}`);
-        setPlan(j);
+        // the plan streams one event per pipeline stage (newline-delimited JSON)
+        const r = await fetch("/api/plan?stream=1", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+        if (!r.ok || !r.body) throw new Error(`plan ${r.status}`);
+        const reader = r.body.getReader();
+        const dec = new TextDecoder();
+        let buf = "";
+        let final: PlanResponse | null = null;
+        const handle = (line: string) => {
+          if (!line.trim()) return;
+          const ev = JSON.parse(line) as PipelineEvent | { type: "result"; plan: PlanResponse } | { type: "error"; error: string };
+          if (ev.type === "progress") setProgress({ step: ev.step, message: ev.message });
+          else if (ev.type === "step") setSteps((prev) => [...prev.filter((x) => x.step !== ev.step), ev]);
+          else if (ev.type === "result") final = ev.plan;
+          else if (ev.type === "error") throw new Error(ev.error);
+        };
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          const lines = buf.split("\n");
+          buf = lines.pop() ?? "";
+          lines.forEach(handle);
+        }
+        handle(buf);
+        if (!final) throw new Error("the plan stream ended without a result");
+        setPlan(final);
         setActiveRoute(null);
       } catch (e) {
         setPlanErr(e instanceof Error ? e.message : String(e));
       } finally {
         setPlanning(false);
+        setProgress(null);
       }
     },
     [form, strikes],
@@ -129,6 +177,7 @@ export default function Dashboard() {
       <Globe
         hazards={signals?.hazards ?? []}
         chokepoints={signals?.chokepoints ?? []}
+        ships={ais?.ships}
         plan={plan}
         activeRouteId={activeRoute}
         selectedHazardId={selected}
@@ -152,7 +201,8 @@ export default function Dashboard() {
               <>
                 <span>
                   <span className="mr-1 inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                  {signals.sources.filter((s) => s.ok).length}/{signals.sources.length} live sources · {signals.hazards.length} hazards · updated {ago(signals.generatedAt)}
+                  {signals.sources.filter((s) => s.ok && !s.fallback).length}/{signals.sources.length} live
+                  {signals.sources.some((s) => s.fallback) && <span className="text-amber-300"> · {signals.sources.filter((s) => s.fallback).length} on snapshot</span>} sources · {signals.hazards.length} hazards · updated {ago(signals.generatedAt)}
                 </span>
                 <span className={signals.ai.model ? "text-violet-300" : "text-slate-500"}>
                   AI: {signals.ai.model ? `Gemini (${signals.ai.model})` : "off"}
@@ -203,15 +253,30 @@ export default function Dashboard() {
             {signals?.sources.map((s) => (
               <div key={s.name} className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
                 <div className="flex items-center gap-2">
-                  <span className={`h-2 w-2 rounded-full ${s.ok ? "bg-emerald-400" : "bg-rose-400"}`} />
+                  <span className={`h-2 w-2 rounded-full ${!s.ok ? "bg-rose-400" : s.fallback ? "bg-amber-400" : "bg-emerald-400"}`} />
                   <a href={s.url} target="_blank" rel="noreferrer" className="font-medium text-slate-200 hover:underline">
                     {s.name}
                   </a>
+                  <span className={`rounded px-1 text-[10px] ${!s.ok ? "bg-rose-500/20 text-rose-300" : s.fallback ? "bg-amber-500/20 text-amber-300" : "bg-emerald-500/15 text-emerald-300"}`}>
+                    {!s.ok ? "down" : s.fallback ? "snapshot" : "live"}
+                  </span>
                   <span className="ml-auto font-mono text-slate-400">{s.count}</span>
                 </div>
                 {s.note && <p className="mt-1 text-slate-500">{s.note}</p>}
               </div>
             ))}
+            <AisCard ais={ais} />
+            {signals?.filtering && <FilteringCard f={signals.filtering} />}
+            {signals?.model && (
+              <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
+                <p className="font-medium text-slate-200">Trained model</p>
+                <p className="mt-1 text-slate-500">
+                  {signals.model.ok ? "Active" : "Unavailable"} · trained through {signals.model.trainedThrough} · predicts a sustained 30%+ traffic collapse within {signals.model.horizonDays} days · features as of {signals.model.asOf ?? "n/a"}.
+                  {signals.model.note && <span className="text-amber-300"> {signals.model.note}</span>}
+                </p>
+              </div>
+            )}
+            <BacktestCard />
             <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2 text-slate-400">
               <p className="font-medium text-slate-200">Also used</p>
               <p className="mt-1">Open-Meteo Marine wave forecast (per route, at the day the ship arrives) · Eurostat MARNET sea-lane network · OpenStreetMap / CARTO / Esri imagery · Google Gemini for categorizing, reasoning and explanations.</p>
@@ -310,7 +375,7 @@ export default function Dashboard() {
               <p>Use <b className="text-pink-200">Simulate strike</b> to drop a missile strike anywhere and watch the plan change.</p>
             </div>
           )}
-          {planning && <div className="h-24 animate-pulse rounded-lg bg-white/5" />}
+          {planning && <PipelinePanel steps={steps} progress={progress} running onSelectHazard={setSelected} />}
           {plan && !planning && original && backup && (
             <>
               <div className={`rounded-lg border p-3 ${DECISION_STYLE[plan.decision].cls}`}>
@@ -339,7 +404,9 @@ export default function Dashboard() {
                 </Section>
               )}
 
-              <Section title="Problems on the original route, by priority">
+              <PipelinePanel steps={plan.pipeline} progress={null} running={false} onSelectHazard={setSelected} />
+
+              <Section title="Why each problem matters (Gemini's reasoning, ranked by the computed priority)">
                 <ol className="space-y-1.5">
                   {plan.problems.map((p) => (
                     <li key={p.hazardId} className="cursor-pointer rounded border border-white/5 bg-white/[0.03] p-2 hover:bg-white/[0.06]" onClick={() => setSelected(p.hazardId)}>
@@ -357,26 +424,6 @@ export default function Dashboard() {
                   ))}
                   {plan.problems.length === 0 && <li className="text-slate-500">No live hazards on the original route.</li>}
                 </ol>
-              </Section>
-
-              <Section title="Why the original route is risky (or safe)">
-                <p>{plan.explanation.whyOriginal}</p>
-              </Section>
-              <Section title="Why a backup route">
-                <p>{plan.explanation.whyBackup}</p>
-              </Section>
-              <Section title="How the backup averts the risk">
-                <p>{plan.explanation.howBackupAverts}</p>
-              </Section>
-              <Section title="Trade-offs">
-                <p>{plan.explanation.tradeoffs}</p>
-              </Section>
-              <Section title="Next actions">
-                <ul className="list-disc space-y-0.5 pl-4">
-                  {plan.explanation.actions.map((a) => (
-                    <li key={a}>{a}</li>
-                  ))}
-                </ul>
               </Section>
 
               {plan.llmTrace && (
@@ -417,6 +464,7 @@ export default function Dashboard() {
         <Legend color={ROUTE_COLORS.ai} label="AI replanned" />
         <Legend color={ROUTE_COLORS.safest} label="safest" />
         <Legend color={ROUTE_COLORS.checkpoint} label="via checkpoint" />
+        {ais?.ok && <span className="text-sky-300">▲ live ships (blue cargo · orange tanker)</span>}
         <span className="text-slate-500">circles: hazards (pulsing = high risk) · teal: chokepoint traffic vs 90-day baseline</span>
       </div>
     </div>
@@ -477,7 +525,11 @@ function HazardCard({ h, rank, open, onClick }: { h: Hazard; rank: number; open:
           <div className="truncate font-medium text-slate-100">{h.title}</div>
           <div className="flex items-center gap-1.5 text-[10px]">
             <span style={{ color: c }}>{CATEGORY_LABEL[h.category]}</span>
-            {h.confidence && <span className="text-slate-500">· {h.confidence} confidence</span>}
+            {h.confidenceScore !== undefined && (
+              <span className="rounded px-1 font-mono" style={{ background: `${confColor(h.confidenceScore)}22`, color: confColor(h.confidenceScore) }} title={h.confidenceReason}>
+                conf {h.confidenceScore}%
+              </span>
+            )}
             <span className="truncate text-slate-500">· {h.sources.join(", ")}</span>
           </div>
         </div>
@@ -485,6 +537,17 @@ function HazardCard({ h, rank, open, onClick }: { h: Hazard; rank: number; open:
       <p className={`mt-1.5 text-slate-400 ${open ? "" : "line-clamp-2"}`}>{h.rationale}</p>
       {open && (
         <div className="mt-2 space-y-1 border-t border-white/10 pt-2">
+          {h.confidenceReason && <p className="text-[11px]" style={{ color: confColor(h.confidenceScore) }}>{h.confidenceReason}</p>}
+          {h.model && (
+            <p className="rounded bg-white/5 p-1.5 text-[11px] text-slate-300">
+              <b>Trained model ({h.model.chokepoint}):</b>{" "}
+              {h.model.observedDrop
+                ? `traffic is already down to ${Math.round((h.model.ratio7 ?? 0) * 100)}% of normal.`
+                : `${((h.model.probability ?? 0) * 100).toFixed(1)}% chance of a sustained traffic collapse within ${h.model.horizonDays} days`}
+              {h.model.forecast && ` · next-7-day traffic ≈ ${Math.round(h.model.forecast.q50 * 100)}% of normal (80% range ${Math.round(h.model.forecast.q10 * 100)}–${Math.round(h.model.forecast.q90 * 100)}%)`}
+              {h.model.newsSurge !== null && h.model.newsSurge >= 2 && ` · headline volume ${h.model.newsSurge.toFixed(1)}× normal`}
+            </p>
+          )}
           <div className="flex gap-3 font-mono text-[10px] text-slate-500">
             <span>signals {h.signalScore}</span>
             {h.aiScore !== undefined && <span className="text-violet-300">gemini {h.aiScore}</span>}
@@ -536,5 +599,88 @@ function RouteCard({ r, base, active, recommended, backup, onClick }: { r: Plann
       </div>
       {m.chokepoints.length > 0 && <div className="mt-1 truncate text-[10px] text-slate-500">via {m.chokepoints.join(" · ")}</div>}
     </button>
+  );
+}
+
+function FilteringCard({ f }: { f: NonNullable<SignalsResponse["filtering"]> }) {
+  return (
+    <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
+      <p className="font-medium text-slate-200">False-alarm filtering</p>
+      <p className="mt-1 text-slate-400">
+        {f.screened} signals screened · <span className="text-amber-300">{f.flagged} flagged</span> · <span className="text-emerald-300">{f.dismissed.length} dismissed</span> as not a real threat to ships.
+      </p>
+      <ul className="mt-1 space-y-1">
+        {f.dismissed.map((d) => (
+          <li key={d.id} className="text-[11px] leading-snug text-slate-500">
+            <span className="text-slate-300">{d.title}:</span> {d.reason}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+type Sys = { label: string; precision: number; recall: number; f1: number; falseAlarmRate: number; events: number; detected: number; warnedEarly: number; medianLeadDays: number; falseAlertsPerYear: number };
+function BacktestCard() {
+  const h = backtest.H14;
+  const rows = ["vantage", "app", "naive15", "naive"].map((k) => (h.systems as unknown as Record<string, Sys>)[k]);
+  const p = h.probability;
+  return (
+    <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
+      <p className="font-medium text-slate-200">Measured accuracy (walk-forward backtest)</p>
+      <p className="mt-1 text-slate-500">
+        IMF PortWatch daily transits at 28 chokepoints, quarterly retraining from {backtest.foldsFrom} to Oct 2026, no future leakage. Task: will a chokepoint lose 30%+ of its traffic for a week within 14 days? Lead time is measured against the first day traffic visibly falls.
+      </p>
+      <div className="mt-1.5 overflow-x-auto">
+        <table className="w-full text-left text-[10px]">
+          <thead className="text-slate-500">
+            <tr><th className="py-1 pr-1">System</th><th className="pr-1">Prec.</th><th className="pr-1">Recall</th><th className="pr-1">False-alarm</th><th className="pr-1">Warned early</th><th className="pr-1">False alerts/yr</th></tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.label} className={`border-t border-white/5 ${r.label.startsWith("Vantage") ? "text-cyan-200" : "text-slate-400"}`}>
+                <td className="py-1 pr-1">{r.label}</td>
+                <td className="pr-1 font-mono">{(r.precision * 100).toFixed(0)}%</td>
+                <td className="pr-1 font-mono">{(r.recall * 100).toFixed(0)}%</td>
+                <td className="pr-1 font-mono">{(r.falseAlarmRate * 100).toFixed(1)}%</td>
+                <td className="pr-1 font-mono">{r.warnedEarly}/{r.events}</td>
+                <td className="pr-1 font-mono">{r.falseAlertsPerYear.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-1 text-slate-500">
+        Model probability: ROC-AUC {p.roc_auc.toFixed(2)}, PR-AUC {p.pr_auc.toFixed(3)} ({p.pr_auc_lift.toFixed(0)}× the {(p.base_rate * 100).toFixed(1)}% base rate), Brier skill {(p.brier_skill * 100).toFixed(1)}%. Full report: ml/README.md.
+      </p>
+    </div>
+  );
+}
+
+function AisCard({ ais }: { ais: AisSnapshot | null }) {
+  if (!ais) return null;
+  const flagged = ais.regions.filter((r) => r.anomalies.length);
+  return (
+    <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
+      <p className="font-medium text-slate-200">Live ships (AIS)</p>
+      {!ais.configured ? (
+        <p className="mt-1 text-slate-500">{ais.note}</p>
+      ) : !ais.ok ? (
+        <p className="mt-1 text-amber-300">{ais.note}</p>
+      ) : (
+        <>
+          <p className="mt-1 text-slate-400">
+            {ais.shipCount} ships sampled over {ais.seconds}s in {ais.regions.filter((r) => r.ships > 0).length} watch zones · {flagged.length} zone(s) with anomalies.
+          </p>
+          <ul className="mt-1 space-y-1">
+            {flagged.map((r) => (
+              <li key={r.id} className="text-[11px] leading-snug text-slate-500">
+                <span className="text-slate-300">{r.name}:</span> {r.anomalies.map((a) => a.detail).join("; ")}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
   );
 }

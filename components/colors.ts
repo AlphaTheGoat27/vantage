@@ -12,6 +12,7 @@ export const HAZARD_COLORS: Record<string, string> = {
   "chokepoint-disruption": "#facc15",
   congestion: "#facc15",
   "sea-ice": "#e0f2fe",
+  "ais-anomaly": "#22d3ee",
 };
 
 export const ROUTE_COLORS: Record<PlannedRoute["id"], string> = {

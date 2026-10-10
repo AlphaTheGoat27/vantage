@@ -41,3 +41,9 @@ yarn-error.log*
 next-env.d.ts
 
 !.env.example
+
+# ML: raw downloads and large intermediates stay out of git (see data/README.md); small results are committed in ml/results
+/data/raw/
+/ml/out/
+__pycache__/
+*.pyc

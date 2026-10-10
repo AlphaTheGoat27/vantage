@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type * as CesiumNS from "cesium";
+import type { Ship } from "@/lib/ais";
 import type { Chokepoint, Hazard, PlanResponse, PlannedRoute } from "@/lib/types";
 import type { LonLat } from "@/lib/geo";
 import { HAZARD_COLORS, ROUTE_COLORS } from "./colors";
@@ -42,6 +43,7 @@ export type BaseMap = "dark" | "osm" | "satellite";
 type Props = {
   hazards: Hazard[];
   chokepoints: Chokepoint[];
+  ships?: Ship[];
   plan: PlanResponse | null;
   activeRouteId: PlannedRoute["id"] | null;
   selectedHazardId: string | null;
@@ -225,6 +227,41 @@ export default function Globe(props: Props) {
       });
     }
   }, [ready, props.hazards, props.chokepoints, props.plan, props.selectedHazardId]);
+
+  // ---- live AIS ships: small arrows rotated to their course, coloured by vessel type
+  const shipLayer = useRef<CesiumNS.BillboardCollection | null>(null);
+  useEffect(() => {
+    const viewer = viewerRef.current, Cesium = cesiumRef.current;
+    if (!ready || !viewer || !Cesium) return;
+    if (!shipLayer.current) shipLayer.current = viewer.scene.primitives.add(new Cesium.BillboardCollection({ scene: viewer.scene }));
+    const layer = shipLayer.current;
+    layer.removeAll();
+    const arrow = document.createElement("canvas");
+    arrow.width = arrow.height = 24;
+    const g = arrow.getContext("2d")!;
+    g.fillStyle = "#fff";
+    g.beginPath();
+    g.moveTo(12, 2);
+    g.lineTo(19, 21);
+    g.lineTo(12, 17);
+    g.lineTo(5, 21);
+    g.closePath();
+    g.fill();
+    const colour: Record<string, string> = { cargo: "#38bdf8", tanker: "#fb923c", passenger: "#a3e635", fishing: "#94a3b8", other: "#e2e8f0", unknown: "#64748b" };
+    for (const s of props.ships ?? []) {
+      const heading = s.heading ?? (s.sog >= 1 ? s.cog : null);
+      layer.add({
+        position: Cesium.Cartesian3.fromDegrees(s.lon, s.lat, 1000),
+        image: arrow,
+        color: Cesium.Color.fromCssColorString(colour[s.cls] ?? "#64748b").withAlpha(s.sog >= 1 ? 0.95 : 0.55),
+        scale: 0.55,
+        rotation: heading === null ? 0 : -Cesium.Math.toRadians(heading),
+        alignedAxis: Cesium.Cartesian3.UNIT_Z,
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 1.4e7),
+        scaleByDistance: new Cesium.NearFarScalar(1e6, 1.2, 1.2e7, 0.5),
+      });
+    }
+  }, [ready, props.ships]);
 
   // ---- routes
   const routeSrc = useRef<CesiumNS.CustomDataSource | null>(null);

@@ -41,9 +41,28 @@ export async function POST(req: Request) {
       }),
     ),
   };
+  // ?stream=1 -> newline-delimited JSON: one event per pipeline stage as it completes, then {type:"result"}
+  if (new URL(req.url).searchParams.get("stream") === "1") {
+    const enc = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (o: unknown) => controller.enqueue(enc.encode(JSON.stringify(o) + "\n"));
+        try {
+          send({ type: "progress", step: "detect", message: "Collecting live signals: ship traffic, news, disaster alerts" });
+          const signals = await getSignals();
+          const plan = await planShipment(input, signals.hazards, signals.chokepoints, { emit: send, sources: signals.sources });
+          send({ type: "result", plan });
+        } catch (e) {
+          send({ type: "error", error: e instanceof Error ? e.message : String(e) });
+        }
+        controller.close();
+      },
+    });
+    return new Response(stream, { headers: { "content-type": "application/x-ndjson; charset=utf-8", "cache-control": "no-store" } });
+  }
   try {
     const signals = await getSignals();
-    const plan = await planShipment(input, signals.hazards, signals.chokepoints);
+    const plan = await planShipment(input, signals.hazards, signals.chokepoints, { sources: signals.sources });
     return Response.json(plan);
   } catch (e) {
     return Response.json({ error: e instanceof Error ? e.message : String(e) }, { status: 422 });

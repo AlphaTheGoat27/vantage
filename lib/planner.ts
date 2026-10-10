@@ -2,21 +2,30 @@ import { geminiEnabled, geminiJson } from "./gemini";
 import { cumulativeKm, daysAtSpeed, haversineKm, pathLengthKm, pointPathKm, samplePath, type LonLat } from "./geo";
 import { PORTS, WAYPOINTS, portById } from "./places";
 import type { Port } from "./types";
+import { MODEL_INFO } from "./model";
 import { seaRoute, seaRouteVia, type EdgePenalty } from "./seagraph";
 import { waveForecast } from "./sources";
 import {
   CATEGORY_LABEL,
+  PRIORITY_FORMULA,
   type Checkpoint,
   type Chokepoint,
   type Decision,
+  type DetectItem,
   type Hazard,
   type HazardCategory,
+  type PipelineEvent,
+  type PipelineStep,
   type PlanResponse,
   type PlannedRoute,
+  type PredictItem,
+  type PriorityRow,
   type Problem,
   type RouteExposure,
+  type RouteJustification,
   type RouteMetrics,
   type ShipmentInput,
+  type SourceStatus,
 } from "./types";
 
 const SECURITY: HazardCategory[] = ["armed-conflict", "military-tension", "piracy", "simulated-strike"];
@@ -191,8 +200,95 @@ const routeBrief = (r: PlannedRoute) => ({
   hazardsCrossed: r.metrics.exposures.slice(0, 6).map((e) => `${e.title} (${CATEGORY_LABEL[e.category]}, score ${e.score}, ${e.distanceKm} km from route, reached on day ${e.etaDays}${e.unavoidable ? ", unavoidable: origin/destination inside it" : ""})`),
 });
 
+// ---------------- prioritisation and route justification (computed, never invented by the LLM) ----------------
+/** Same cost model as measure(): expected disruption + war-risk premium for a set of exposures. */
+function expectedHazardCost(exps: RouteExposure[], s: ShipmentInput): number {
+  const scored = exps.filter((e) => !e.unavoidable);
+  const risk = 100 * (1 - scored.reduce((p, e) => p * (1 - 0.95 * e.exposure), 1));
+  const conflict = Math.max(0, ...scored.filter((e) => SECURITY.includes(e.category)).map((e) => e.exposure));
+  const premium = conflict >= 0.25 ? 0.01 * conflict * (s.hullValueUsd + s.cargoValueUsd) : 0;
+  const incident = s.cargoValueUsd * (s.critical ? 0.25 : 0.15) + 10 * s.dailyCostUsd;
+  return 0.25 * (risk / 100) ** 2 * incident + premium;
+}
+
+function rankProblems(onRoute: RouteExposure[], hazardById: Map<string, Hazard>, s: ShipmentInput): PriorityRow[] {
+  const total = expectedHazardCost(onRoute, s);
+  const rows = onRoute.map((e) => {
+    const h = hazardById.get(e.hazardId)!;
+    const impactUsd = e.unavoidable ? 0 : Math.max(0, total - expectedHazardCost(onRoute.filter((x) => x.hazardId !== e.hazardId), s));
+    const confidence = h.confidenceScore ?? 60;
+    return { e, h, impactUsd, confidence };
+  });
+  const maxImpact = Math.max(1, ...rows.map((r) => r.impactUsd));
+  return rows
+    .map(({ e, h, impactUsd, confidence }) => {
+      const urgency = 1 / (1 + e.etaDays / 5);
+      const riskTimesConfidence = (e.score / 100) * (confidence / 100);
+      const impactNorm = impactUsd / maxImpact;
+      const priority = 100 * (0.4 * impactNorm + 0.35 * riskTimesConfidence + 0.25 * urgency);
+      return {
+        hazardId: e.hazardId, title: h.title, category: e.category, rank: 0, etaDays: e.etaDays,
+        urgency: +urgency.toFixed(3), riskScore: e.score, confidence, riskTimesConfidence: +riskTimesConfidence.toFixed(3),
+        impactUsd: Math.round(impactUsd), impactNorm: +impactNorm.toFixed(3), priority: +priority.toFixed(1), unavoidable: Boolean(e.unavoidable),
+      } satisfies PriorityRow;
+    })
+    .sort((a, b) => b.priority - a.priority)
+    .map((r, i) => ({ ...r, rank: i + 1 }));
+}
+
+function justify(original: PlannedRoute, backup: PlannedRoute, others: (PlannedRoute | null)[], checkpoint: Checkpoint | undefined, checkpointRoute: PlannedRoute | null, recommendedId: PlannedRoute["id"]): RouteJustification {
+  const o = original.metrics, b = backup.metrics;
+  const avoids = o.exposures
+    .filter((e) => !e.unavoidable)
+    .map((e) => ({ e, after: b.exposures.find((x) => x.hazardId === e.hazardId)?.exposure ?? 0 }))
+    .filter(({ e, after }) => e.exposure >= 0.05 && after < e.exposure * 0.5)
+    .map(({ e, after }) => ({ hazardId: e.hazardId, title: e.title, category: e.category, exposureBefore: e.exposure, exposureAfter: +after.toFixed(3) }));
+  const alts = [original, ...others, checkpointRoute].filter((r): r is PlannedRoute => Boolean(r));
+  const seen = new Set<string>();
+  const alternatives = alts
+    .filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true)))
+    .map((r) => {
+      const d = r.metrics.totalExpectedUsd - o.totalExpectedUsd;
+      const verdict =
+        r.id === recommendedId ? "Recommended"
+        : r.id === "original" ? "Shortest, but carries the live risk"
+        : r.metrics.riskScore >= o.riskScore ? "No safer than the original"
+        : d > 0 ? `Safer but costs ${fmtUsd(d)} more in expectation`
+        : `Safer and ${fmtUsd(-d)} cheaper in expectation`;
+      return { id: r.id, label: r.label, days: r.metrics.days, km: r.metrics.km, riskScore: r.metrics.riskScore, totalExpectedUsd: r.metrics.totalExpectedUsd, deltaVsOriginalUsd: d, verdict };
+    });
+  let checkpointVerdict: string | undefined;
+  if (checkpoint && checkpointRoute) {
+    const cp = checkpointRoute.metrics.totalExpectedUsd, bk = b.totalExpectedUsd, clear = o.voyageCostUsd;
+    const denom = cp - clear;
+    const pStar = denom > 0 ? (cp - bk) / denom : NaN;
+    checkpointVerdict =
+      cp <= bk
+        ? `The checkpoint plan is never worse than rerouting now: even if the risk persists it costs ${fmtUsd(cp)} expected versus ${fmtUsd(bk)}.`
+        : Number.isFinite(pStar) && pStar > 0 && pStar < 1
+          ? `Checkpoint beats rerouting now only if there is at least a ${(pStar * 100).toFixed(0)}% chance the hazard clears before ${checkpoint.port.name} (day ${checkpoint.etaDays}); if it persists the late divert costs ${checkpoint.divertPenaltyDays > 0 ? `${checkpoint.divertPenaltyDays} extra days and ` : ""}${fmtUsd(checkpoint.divertPenaltyUsd)} more. Storms often clear in days; conflict zones rarely do.`
+          : `Checkpoint is not worth it: waiting adds ${fmtUsd(checkpoint.divertPenaltyUsd)} expected cost without a realistic upside.`;
+  }
+  return {
+    backupId: backup.id, avoids, extraDays: +(b.days - o.days).toFixed(1), extraKm: b.km - o.km, extraVoyageCostUsd: b.voyageCostUsd - o.voyageCostUsd,
+    riskBefore: o.riskScore, riskAfter: b.riskScore, expectedCostBeforeUsd: o.totalExpectedUsd, expectedCostAfterUsd: b.totalExpectedUsd,
+    netSavingUsd: o.totalExpectedUsd - b.totalExpectedUsd, alternatives, checkpointVerdict,
+  };
+}
+
 // ---------------- main ----------------
-export async function planShipment(s: ShipmentInput, baseHazards: Hazard[], chokepoints: Chokepoint[]): Promise<PlanResponse> {
+export async function planShipment(
+  s: ShipmentInput,
+  baseHazards: Hazard[],
+  chokepoints: Chokepoint[],
+  opts: { emit?: (e: PipelineEvent) => void; sources?: SourceStatus[] } = {},
+): Promise<PlanResponse> {
+  const pipeline: PipelineStep[] = [];
+  const step = (e: PipelineStep) => {
+    pipeline.push(e);
+    opts.emit?.(e);
+  };
+  const progress = (st: PipelineStep["step"], message: string) => opts.emit?.({ type: "progress", step: st, message });
   const origin = portById(s.originId), destination = portById(s.destinationId);
   if (!origin || !destination) throw new Error("unknown origin or destination port");
   if (origin.id === destination.id) throw new Error("origin and destination are the same port");
@@ -208,6 +304,56 @@ export async function planShipment(s: ShipmentInput, baseHazards: Hazard[], chok
   const onRoute = orig.metrics.exposures.filter((e) => e.exposure >= 0.05);
   const avoidable = onRoute.filter((e) => !e.unavoidable);
   const blockAll = new Set(avoidable.filter((e) => e.score >= BLOCK_SCORE).map((e) => e.hazardId));
+
+  // ---- pipeline stages 1-4 depend only on the original route, so they stream out before any LLM call
+  const src = opts.sources ?? [];
+  step({
+    type: "step", step: "detect",
+    summary: onRoute.length ? `${onRoute.length} hazard(s) detected near the ${origin.name} to ${destination.name} route, from ${src.filter((x) => x.ok && !x.fallback).length} live sources` : "No live hazard found near the route",
+    items: onRoute.map((e): DetectItem => {
+      const h = hazardById.get(e.hazardId)!;
+      return {
+        hazardId: e.hazardId, title: h.title, category: h.category, score: h.score, confidenceScore: h.confidenceScore, confidenceReason: h.confidenceReason,
+        observations: h.evidence.slice(0, 3).map((x) => `${x.source}: ${x.text}`), sources: h.sources, etaDays: e.etaDays, distanceKm: e.distanceKm, unavoidable: e.unavoidable,
+      };
+    }),
+    sourcesLive: src.filter((x) => x.ok && !x.fallback).length, sourcesFallback: src.filter((x) => x.ok && x.fallback).length, sourcesDown: src.filter((x) => !x.ok).length,
+  });
+  const modelNames = new Set<string>(orig.metrics.chokepoints);
+  for (const e of onRoute) {
+    const m = hazardById.get(e.hazardId)?.model;
+    if (m) modelNames.add(m.chokepoint);
+  }
+  const predictItems = chokepoints
+    .filter((c) => modelNames.has(c.name) && c.model)
+    .map((c): PredictItem => ({ chokepoint: c.name, probability: c.model!.probability, ratio7: c.model!.ratio7, observedDrop: c.model!.observedDrop, alertKind: c.model!.alertKind, forecast: c.model!.forecast, newsSurge: c.model!.newsSurge, drivers: c.model!.drivers }));
+  const alerting = predictItems.filter((p) => p.alertKind !== "none");
+  step({
+    type: "step", step: "predict",
+    summary: predictItems.length
+      ? alerting.length
+        ? `${alerting.map((p) => (p.alertKind === "observed" ? `${p.chokepoint}: already disrupted (traffic at ${Math.round((p.ratio7 ?? 0) * 100)}% of normal)` : `${p.chokepoint}: ${((p.probability ?? 0) * 100).toFixed(0)}% chance of a sustained traffic collapse within 14 days`)).join("; ")}`
+        : `Trained model sees no imminent disruption at the ${predictItems.length} chokepoint(s) on this route`
+      : "No chokepoint on this route is covered by the trained model",
+    items: predictItems, horizonDays: 14, trainedThrough: MODEL_INFO.trainedThrough,
+  });
+  const groups = new Map<HazardCategory, { hazardId: string; title: string; evidence: string[] }[]>();
+  for (const e of onRoute) {
+    const h = hazardById.get(e.hazardId)!;
+    groups.set(h.category, [...(groups.get(h.category) ?? []), { hazardId: h.id, title: h.title, evidence: h.evidence.slice(0, 2).map((x) => `${x.source}: ${x.text}`) }]);
+  }
+  step({
+    type: "step", step: "categorize",
+    summary: groups.size ? [...groups].map(([c, l]) => `${l.length} x ${CATEGORY_LABEL[c]}`).join(", ") : "Nothing to categorize",
+    groups: [...groups].map(([category, hazards]) => ({ category, label: CATEGORY_LABEL[category], hazards })),
+  });
+  const priorities = rankProblems(onRoute, hazardById, s);
+  step({
+    type: "step", step: "prioritize",
+    summary: priorities.length ? `#1 ${priorities[0].title} (priority ${priorities[0].priority}): reached on day ${priorities[0].etaDays}, adds ${fmtUsd(priorities[0].impactUsd)} expected cost` : "No hazards to rank",
+    formula: PRIORITY_FORMULA, rows: priorities,
+  });
+  progress("decide", geminiEnabled() ? "Gemini is choosing proceed / checkpoint / reroute and designing the backup route" : "Choosing proceed / checkpoint / reroute");
 
   const build = async (id: PlannedRoute["id"], label: string, path: LonLat[] | null, note?: string): Promise<PlannedRoute | null> => {
     if (!path) return null;
@@ -275,6 +421,7 @@ export async function planShipment(s: ShipmentInput, baseHazards: Hazard[], chok
           {
             shipment: { from: origin.name, to: destination.name, cargo: s.cargo, cargoValue: fmtUsd(s.cargoValueUsd), critical: s.critical, speedKnots: s.speedKnots, dailyVesselCost: fmtUsd(s.dailyCostUsd) },
             originalRoute: routeBrief(original),
+            computedPriorityRanking: priorities.map((r) => ({ rank: r.rank, hazardId: r.hazardId, priority: r.priority, etaDays: r.etaDays, expectedCostAddedUsd: r.impactUsd, confidence: r.confidence })),
             hazardsOnRoute: onRoute.map((e) => {
               const h = hazardById.get(e.hazardId)!;
               return { id: e.hazardId, title: h.title, category: h.category, score: h.score, radiusKm: h.radiusKm, distanceFromRouteKm: e.distanceKm, reachedOnDay: e.etaDays, unavoidable: e.unavoidable, rationale: h.rationale, evidence: h.evidence.slice(0, 4).map((x) => `${x.time?.slice(0, 10) ?? ""} ${x.source}: ${x.text}`) };
@@ -290,10 +437,11 @@ export async function planShipment(s: ShipmentInput, baseHazards: Hazard[], chok
       });
       ai = { used: true, model };
       decision = data.decision === "PROCEED_TO_CHECKPOINT" && !checkpoint ? "REROUTE" : data.decision;
+      const rankOf = new Map(priorities.map((r) => [r.hazardId, r]));
       problems = data.problems
         .filter((p) => hazardById.has(p.hazardId))
-        .sort((a, b) => a.priority - b.priority)
-        .map((p, i) => ({ ...p, priority: i + 1, title: hazardById.get(p.hazardId)!.title, category: hazardById.get(p.hazardId)!.category }));
+        .sort((a, b) => (rankOf.get(a.hazardId)?.rank ?? 99) - (rankOf.get(b.hazardId)?.rank ?? 99))
+        .map((p, i) => ({ ...p, priority: i + 1, priorityScore: rankOf.get(p.hazardId)?.priority, title: hazardById.get(p.hazardId)!.title, category: hazardById.get(p.hazardId)!.category }));
       const avoid = new Set(data.avoidHazardIds.filter((id) => hazardById.has(id)));
       const via = data.via.filter((v) => WAYPOINTS[v]);
       const path = seaRouteVia([origin.center, ...via.map((v) => WAYPOINTS[v]), destination.center], penaltyFor(allHazards, avoid, 2, ends));
@@ -331,6 +479,16 @@ export async function planShipment(s: ShipmentInput, baseHazards: Hazard[], chok
   problems ??= ruleProblems();
 
   const recommended: PlannedRoute = decision === "PROCEED" ? original : decision === "PROCEED_TO_CHECKPOINT" ? original : backup;
+  const justification = justify(original, backup, [aiRoute, safest, balanced], checkpoint, checkpointRoute, recommended.id);
+  step({
+    type: "step", step: "decide",
+    summary:
+      decision === "PROCEED" ? `Proceed on the original route (risk ${original.metrics.riskScore}/100)`
+      : decision === "REROUTE" ? `Reroute via ${backup.label}: risk ${justification.riskBefore} to ${justification.riskAfter}, ${justification.extraDays >= 0 ? "+" : ""}${justification.extraDays} days, expected cost ${justification.netSavingUsd >= 0 ? "saves" : "adds"} ${fmtUsd(Math.abs(justification.netSavingUsd))}`
+      : `Sail to ${checkpoint?.port.name}, reassess there (risk ${original.metrics.riskScore}/100 ahead)`,
+    decision, recommendedRouteId: recommended.id, justification, rationale: llmTrace?.rationale, validation: llmTrace?.validation,
+  });
+  progress("explain", ai.used ? "Gemini is writing the plain-English explanation" : "Writing the explanation");
 
   // ---- explanation
   const o = original.metrics, b = backup.metrics;
@@ -383,6 +541,8 @@ export async function planShipment(s: ShipmentInput, baseHazards: Hazard[], chok
     }
   }
 
+  step({ type: "step", step: "explain", summary: explanation.headline, explanation });
+
   const routes = [original, ...alternatives, checkpointRoute].filter((r): r is PlannedRoute => Boolean(r));
   const distinct = routes.filter(
     (r, i) => i === 0 || r.id === "ai" || r.id === backup.id || routes.slice(0, i).every((q) => Math.abs(q.metrics.km - r.metrics.km) > q.metrics.km * 0.01),
@@ -393,5 +553,6 @@ export async function planShipment(s: ShipmentInput, baseHazards: Hazard[], chok
     shipment: { ...s, origin, destination },
     ai, decision, recommendedRouteId: recommended.id, backupRouteId: backup.id, routes: distinct, problems, checkpoint, explanation, llmTrace,
     hazards: allHazards,
+    priorities, justification, pipeline,
   };
 }

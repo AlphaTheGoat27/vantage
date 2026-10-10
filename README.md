@@ -18,25 +18,54 @@ live APIs ─► detect hazards ─► Gemini categorizes & scores each zone ─
 
 **Simulate strike**: click anywhere on the globe to drop a missile strike on shipping and watch the plan change.
 
+## Trained prediction model, with proof
+
+Beyond live signals, Vantage runs a **trained, calibrated model** that estimates the chance a chokepoint's traffic collapses within the next 14 days, plus a 7-day forecast with a prediction interval. It is trained and backtested on 7.7 years of IMF PortWatch transits plus weekly news volume, walk-forward with no future leakage, and evaluated in TypeScript on Vercel (no Python at runtime). It is compared with a naive rule and with the scoring the app shipped with before:
+
+| 14-day horizon, 23 events | False-alarm rate | False alert episodes / chokepoint-year | Events warned before traffic fell | Median lead |
+|---|---|---|---|---|
+| **Vantage** | 2.9% | 0.95 | 11 / 23 | +10 d |
+| Previous app scoring | 3.8% | 1.82 | 10 / 23 | +0.5 d |
+| Naive drop > 15% | 6.4% | 2.83 | 10 / 23 | -1 d |
+
+A modest, honestly measured gain on a rare-event problem, including where it did *not* help (the Red Sea case: the transit model alerted as carriers reacted; the news layer was four weeks earlier). Method, data, caveats and the Red Sea case study: [`ml/README.md`](ml/README.md), [`ml/RESULTS.md`](ml/RESULTS.md), [`data/README.md`](data/README.md), charts in [`slides/`](slides).
+
+Each hazard also carries a **confidence score (0-100%)** built from source agreement, data freshness, model/AI certainty and missing-data penalty, with a one-line reason, and the planner streams a visible **Detect, Predict, Categorize, Prioritize, Decide, Explain** pipeline. Prioritisation is computed (urgency x business impact in USD x risk x confidence) and the LLM only supplies reasoning text. The Data sources tab lists which feeds are live, on a bundled last-good snapshot, or down, and which signals were dismissed as false alarms and why.
+
+**Live ships (AIS):** with a free `AISSTREAM_API_KEY` the server samples AISStream for a few seconds around the watch zones (Vercel functions cannot hold a socket open), draws ships on the globe, and flags congestion, speed drops, scattered courses and AIS gaps as anomalies that raise the zone's hazard score.
+
 ## Run locally
 
 ```bash
-cp .env.example .env.local   # add GEMINI_API_KEY (free)
+cp .env.example .env.local   # add GEMINI_API_KEY (free) and optionally AISSTREAM_API_KEY (free)
 npm install
 npm run dev
 ```
 
-Deploy on Vercel: import the repo and set `GEMINI_API_KEY` in the project's environment variables.
+Checks: `npx eslint .`, `npx tsc --noEmit`, `npm run build`, `npx tsx lib/model.test.ts` (Python/TypeScript parity). Retrain and re-run the backtest: `pip install -r ml/requirements.txt && python ml/run_all.py --skip-news`.
+
+## Deploy on Vercel
+
+Import the repo and set these environment variables for **Production and Preview** (Project, Settings, Environment Variables):
+
+| Variable | Required | Where to get it |
+|---|---|---|
+| `GEMINI_API_KEY` | yes (the app falls back to rule-based reasoning without it) | https://aistudio.google.com/apikey |
+| `AISSTREAM_API_KEY` | optional (no live ships or AIS anomalies without it) | https://aisstream.io (free) |
+| `GEMINI_MODEL` | optional | overrides the default model order |
+
+Turn off Deployment Protection for Production so the public link opens logged out (Settings, Deployment Protection).
 
 ## Data sources (all free)
 
 | Signal | Source |
 |---|---|
-| Chokepoint transits | IMF PortWatch (ArcGIS REST) |
+| Chokepoint transits (live + training) | IMF PortWatch (ArcGIS REST) |
 | Conflict, piracy, military news | Google News RSS, GDELT 2.0 DOC API |
 | Cyclones, earthquakes, volcanoes | GDACS |
 | Storms, icebergs | NASA EONET |
 | Wave forecast | Open-Meteo Marine |
+| Live ships (optional) | AISStream.io (free key) |
 | Sea-lane network | Eurostat MARNET (via searoute-js), `scripts/build-searoute-graph.mjs` |
 | Globe imagery | Esri Dark Gray, OpenStreetMap, Esri World Imagery |
 | Reasoning | Google Gemini (free tier) |

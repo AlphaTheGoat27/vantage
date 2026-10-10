@@ -1,3 +1,5 @@
+import { SNAPSHOTS } from "./snapshots";
+
 // Small in-memory TTL cache for upstream APIs. Keeps the last good value when a refresh
 // fails, and shares one in-flight request between concurrent callers.
 type Entry<T> = { value?: T; at: number; inflight?: Promise<T> };
@@ -24,6 +26,26 @@ export async function cached<T>(key: string, ttlMs: number, load: () => Promise<
   store.set(key, { ...(e ?? { at: 0 }), inflight: p });
   return p;
 }
+
+// ---- last-good snapshots bundled in the repo (lib/data/snapshots/*.json, refreshed by scripts/snapshot-sources.mts) ----
+const fallbackUsed = new Map<string, string>();
+
+/** cached() that falls back to the bundled snapshot when the upstream is down and nothing is in memory. */
+export async function resilient<T>(key: string, ttlMs: number, load: () => Promise<T>): Promise<T> {
+  try {
+    const v = await cached(key, ttlMs, load);
+    fallbackUsed.delete(key);
+    return v;
+  } catch (err) {
+    const snap = SNAPSHOTS[key];
+    if (!snap || snap.data == null) throw err;
+    fallbackUsed.set(key, snap.takenAt);
+    return snap.data as T;
+  }
+}
+/** Last good in-memory value for a cache key (used by scripts/snapshot-sources.mts). */
+export const peek = (key: string) => (store.get(key) as Entry<unknown> | undefined)?.value;
+export const fallbackInfo = (keys: string[]) => keys.map((k) => fallbackUsed.get(k)).find(Boolean);
 
 export async function fetchJson<T = unknown>(url: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
   const res = await fetch(url, {

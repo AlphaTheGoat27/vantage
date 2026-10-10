@@ -1,0 +1,761 @@
+{
+ "generated": "2026-10-10T14:40:27.140Z",
+ "query": "(\"Red Sea\" OR \"Bab el-Mandeb\" OR Houthi) (ship OR vessel OR tanker OR shipping OR containership OR freighter)",
+ "alertDates": {
+  "newsLayer45": "2023-11-15",
+  "newsLayer70": "2023-11-19",
+  "combined45": "2023-11-15"
+ },
+ "days": [
+  {
+   "date": "2023-11-05",
+   "headlines": 14,
+   "mass": 3.6,
+   "news": 40,
+   "traffic": 0,
+   "combined": 40,
+   "r7": 1.053
+  },
+  {
+   "date": "2023-11-06",
+   "headlines": 8,
+   "mass": 2.3,
+   "news": 28,
+   "traffic": 0,
+   "combined": 28,
+   "r7": 1.015
+  },
+  {
+   "date": "2023-11-07",
+   "headlines": 7,
+   "mass": 2.2,
+   "news": 27,
+   "traffic": 0,
+   "combined": 27,
+   "r7": 0.996
+  },
+  {
+   "date": "2023-11-08",
+   "headlines": 5,
+   "mass": 1.8,
+   "news": 23,
+   "traffic": 0,
+   "combined": 23,
+   "r7": 1.028
+  },
+  {
+   "date": "2023-11-09",
+   "headlines": 5,
+   "mass": 1.1,
+   "news": 15,
+   "traffic": 0,
+   "combined": 15,
+   "r7": 1.006
+  },
+  {
+   "date": "2023-11-10",
+   "headlines": 5,
+   "mass": 0.9,
+   "news": 12,
+   "traffic": 0,
+   "combined": 12,
+   "r7": 0.971
+  },
+  {
+   "date": "2023-11-11",
+   "headlines": 5,
+   "mass": 0.9,
+   "news": 12,
+   "traffic": 0,
+   "combined": 12,
+   "r7": 0.971
+  },
+  {
+   "date": "2023-11-12",
+   "headlines": 4,
+   "mass": 0.6,
+   "news": 8,
+   "traffic": 0,
+   "combined": 8,
+   "r7": 0.975
+  },
+  {
+   "date": "2023-11-13",
+   "headlines": 7,
+   "mass": 1,
+   "news": 13,
+   "traffic": 0,
+   "combined": 13,
+   "r7": 1.01
+  },
+  {
+   "date": "2023-11-14",
+   "headlines": 8,
+   "mass": 2.2,
+   "news": 27,
+   "traffic": 0,
+   "combined": 27,
+   "r7": 1.017
+  },
+  {
+   "date": "2023-11-15",
+   "headlines": 13,
+   "mass": 5.1,
+   "news": 51,
+   "traffic": 0,
+   "combined": 51,
+   "r7": 1.013
+  },
+  {
+   "date": "2023-11-16",
+   "headlines": 12,
+   "mass": 4.5,
+   "news": 47,
+   "traffic": 0,
+   "combined": 47,
+   "r7": 0.995
+  },
+  {
+   "date": "2023-11-17",
+   "headlines": 11,
+   "mass": 5.2,
+   "news": 52,
+   "traffic": 0,
+   "combined": 52,
+   "r7": 1.027
+  },
+  {
+   "date": "2023-11-18",
+   "headlines": 10,
+   "mass": 3.5,
+   "news": 39,
+   "traffic": 0,
+   "combined": 39,
+   "r7": 1.024
+  },
+  {
+   "date": "2023-11-19",
+   "headlines": 33,
+   "mass": 19.7,
+   "news": 94,
+   "traffic": 0,
+   "combined": 94,
+   "r7": 1.004
+  },
+  {
+   "date": "2023-11-20",
+   "headlines": 74,
+   "mass": 50.1,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.979
+  },
+  {
+   "date": "2023-11-21",
+   "headlines": 94,
+   "mass": 64.6,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 1.011
+  },
+  {
+   "date": "2023-11-22",
+   "headlines": 97,
+   "mass": 67,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 1.026
+  },
+  {
+   "date": "2023-11-23",
+   "headlines": 97,
+   "mass": 60.4,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 1.025
+  },
+  {
+   "date": "2023-11-24",
+   "headlines": 96,
+   "mass": 45.1,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 1.022
+  },
+  {
+   "date": "2023-11-25",
+   "headlines": 95,
+   "mass": 38.2,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 1.002
+  },
+  {
+   "date": "2023-11-26",
+   "headlines": 90,
+   "mass": 36,
+   "news": 99,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 1.058
+  },
+  {
+   "date": "2023-11-27",
+   "headlines": 83,
+   "mass": 35.4,
+   "news": 99,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 1.046
+  },
+  {
+   "date": "2023-11-28",
+   "headlines": 48,
+   "mass": 25,
+   "news": 97,
+   "traffic": 0,
+   "combined": 97,
+   "r7": 1.026
+  },
+  {
+   "date": "2023-11-29",
+   "headlines": 35,
+   "mass": 22,
+   "news": 96,
+   "traffic": 0,
+   "combined": 96,
+   "r7": 1.034
+  },
+  {
+   "date": "2023-11-30",
+   "headlines": 32,
+   "mass": 20,
+   "news": 94,
+   "traffic": 0,
+   "combined": 94,
+   "r7": 1.027
+  },
+  {
+   "date": "2023-12-01",
+   "headlines": 26,
+   "mass": 14.5,
+   "news": 87,
+   "traffic": 0,
+   "combined": 87,
+   "r7": 0.981
+  },
+  {
+   "date": "2023-12-02",
+   "headlines": 25,
+   "mass": 12.7,
+   "news": 84,
+   "traffic": 0,
+   "combined": 84,
+   "r7": 0.966
+  },
+  {
+   "date": "2023-12-03",
+   "headlines": 59,
+   "mass": 41.3,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.968
+  },
+  {
+   "date": "2023-12-04",
+   "headlines": 85,
+   "mass": 59.9,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 1.006
+  },
+  {
+   "date": "2023-12-05",
+   "headlines": 80,
+   "mass": 57.7,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.998
+  },
+  {
+   "date": "2023-12-06",
+   "headlines": 90,
+   "mass": 65.4,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.955
+  },
+  {
+   "date": "2023-12-07",
+   "headlines": 93,
+   "mass": 53.2,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.96
+  },
+  {
+   "date": "2023-12-08",
+   "headlines": 94,
+   "mass": 42.8,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.996
+  },
+  {
+   "date": "2023-12-09",
+   "headlines": 96,
+   "mass": 41.6,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 1.016
+  },
+  {
+   "date": "2023-12-10",
+   "headlines": 96,
+   "mass": 38.2,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.967
+  },
+  {
+   "date": "2023-12-11",
+   "headlines": 91,
+   "mass": 34.8,
+   "news": 99,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.924
+  },
+  {
+   "date": "2023-12-12",
+   "headlines": 92,
+   "mass": 51,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.946
+  },
+  {
+   "date": "2023-12-13",
+   "headlines": 94,
+   "mass": 54.9,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.974
+  },
+  {
+   "date": "2023-12-14",
+   "headlines": 96,
+   "mass": 60.7,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 1.004
+  },
+  {
+   "date": "2023-12-15",
+   "headlines": 98,
+   "mass": 61.2,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.991
+  },
+  {
+   "date": "2023-12-16",
+   "headlines": 99,
+   "mass": 58.8,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.968
+  },
+  {
+   "date": "2023-12-17",
+   "headlines": 99,
+   "mass": 60.9,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.955
+  },
+  {
+   "date": "2023-12-18",
+   "headlines": 100,
+   "mass": 66.7,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.939
+  },
+  {
+   "date": "2023-12-19",
+   "headlines": 100,
+   "mass": 70.5,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.887
+  },
+  {
+   "date": "2023-12-20",
+   "headlines": 100,
+   "mass": 72,
+   "news": 100,
+   "traffic": 0,
+   "combined": 99,
+   "r7": 0.855
+  },
+  {
+   "date": "2023-12-21",
+   "headlines": 100,
+   "mass": 69.7,
+   "news": 100,
+   "traffic": 28,
+   "combined": 99,
+   "r7": 0.782
+  },
+  {
+   "date": "2023-12-22",
+   "headlines": 100,
+   "mass": 63.3,
+   "news": 100,
+   "traffic": 35,
+   "combined": 99,
+   "r7": 0.734
+  },
+  {
+   "date": "2023-12-23",
+   "headlines": 100,
+   "mass": 51.3,
+   "news": 100,
+   "traffic": 38,
+   "combined": 99,
+   "r7": 0.706
+  },
+  {
+   "date": "2023-12-24",
+   "headlines": 100,
+   "mass": 47.4,
+   "news": 100,
+   "traffic": 35,
+   "combined": 99,
+   "r7": 0.73
+  },
+  {
+   "date": "2023-12-25",
+   "headlines": 100,
+   "mass": 44.7,
+   "news": 100,
+   "traffic": 33,
+   "combined": 99,
+   "r7": 0.748
+  },
+  {
+   "date": "2023-12-26",
+   "headlines": 100,
+   "mass": 43.5,
+   "news": 100,
+   "traffic": 32,
+   "combined": 99,
+   "r7": 0.752
+  },
+  {
+   "date": "2023-12-27",
+   "headlines": 95,
+   "mass": 38.5,
+   "news": 100,
+   "traffic": 37,
+   "combined": 99,
+   "r7": 0.719
+  },
+  {
+   "date": "2023-12-28",
+   "headlines": 93,
+   "mass": 37.8,
+   "news": 100,
+   "traffic": 38,
+   "combined": 99,
+   "r7": 0.707
+  },
+  {
+   "date": "2023-12-29",
+   "headlines": 94,
+   "mass": 41.4,
+   "news": 100,
+   "traffic": 33,
+   "combined": 99,
+   "r7": 0.748
+  },
+  {
+   "date": "2023-12-30",
+   "headlines": 94,
+   "mass": 40.8,
+   "news": 100,
+   "traffic": 34,
+   "combined": 99,
+   "r7": 0.74
+  },
+  {
+   "date": "2023-12-31",
+   "headlines": 96,
+   "mass": 50.8,
+   "news": 100,
+   "traffic": 39,
+   "combined": 99,
+   "r7": 0.701
+  },
+  {
+   "date": "2024-01-01",
+   "headlines": 97,
+   "mass": 54.9,
+   "news": 100,
+   "traffic": 45,
+   "combined": 99,
+   "r7": 0.657
+  },
+  {
+   "date": "2024-01-02",
+   "headlines": 97,
+   "mass": 56,
+   "news": 100,
+   "traffic": 46,
+   "combined": 99,
+   "r7": 0.648
+  },
+  {
+   "date": "2024-01-03",
+   "headlines": 98,
+   "mass": 59.8,
+   "news": 100,
+   "traffic": 46,
+   "combined": 99,
+   "r7": 0.644
+  },
+  {
+   "date": "2024-01-04",
+   "headlines": 100,
+   "mass": 54.4,
+   "news": 100,
+   "traffic": 44,
+   "combined": 99,
+   "r7": 0.664
+  },
+  {
+   "date": "2024-01-05",
+   "headlines": 99,
+   "mass": 53.4,
+   "news": 100,
+   "traffic": 50,
+   "combined": 100,
+   "r7": 0.617
+  },
+  {
+   "date": "2024-01-06",
+   "headlines": 99,
+   "mass": 52.9,
+   "news": 100,
+   "traffic": 49,
+   "combined": 99,
+   "r7": 0.623
+  },
+  {
+   "date": "2024-01-07",
+   "headlines": 99,
+   "mass": 47.5,
+   "news": 100,
+   "traffic": 50,
+   "combined": 100,
+   "r7": 0.613
+  },
+  {
+   "date": "2024-01-08",
+   "headlines": 99,
+   "mass": 40.4,
+   "news": 100,
+   "traffic": 46,
+   "combined": 99,
+   "r7": 0.646
+  },
+  {
+   "date": "2024-01-09",
+   "headlines": 97,
+   "mass": 42.2,
+   "news": 100,
+   "traffic": 45,
+   "combined": 99,
+   "r7": 0.651
+  },
+  {
+   "date": "2024-01-10",
+   "headlines": 97,
+   "mass": 49.6,
+   "news": 100,
+   "traffic": 44,
+   "combined": 99,
+   "r7": 0.658
+  },
+  {
+   "date": "2024-01-11",
+   "headlines": 92,
+   "mass": 53,
+   "news": 100,
+   "traffic": 44,
+   "combined": 99,
+   "r7": 0.664
+  },
+  {
+   "date": "2024-01-12",
+   "headlines": 97,
+   "mass": 53.8,
+   "news": 100,
+   "traffic": 46,
+   "combined": 99,
+   "r7": 0.648
+  },
+  {
+   "date": "2024-01-13",
+   "headlines": 97,
+   "mass": 55.2,
+   "news": 100,
+   "traffic": 46,
+   "combined": 99,
+   "r7": 0.646
+  },
+  {
+   "date": "2024-01-14",
+   "headlines": 96,
+   "mass": 47.9,
+   "news": 100,
+   "traffic": 50,
+   "combined": 100,
+   "r7": 0.617
+  },
+  {
+   "date": "2024-01-15",
+   "headlines": 97,
+   "mass": 47.5,
+   "news": 100,
+   "traffic": 55,
+   "combined": 100,
+   "r7": 0.575
+  }
+ ],
+ "pricing": [
+  {
+   "date": "2023-11-15",
+   "score": 51,
+   "decision": "REROUTE",
+   "originalDays": 21.8,
+   "backupDays": 31,
+   "originalRisk": 48,
+   "backupRisk": 0,
+   "originalExpectedUsd": 3612932,
+   "backupExpectedUsd": 1859194,
+   "netSavingUsd": 1753738,
+   "extraVoyageCostUsd": 550322,
+   "warRiskPremiumAvoidedUsd": 1045500,
+   "expectedDisruptionAvoidedUsd": 1258560
+  },
+  {
+   "date": "2023-11-19",
+   "score": 94,
+   "decision": "REROUTE",
+   "originalDays": 21.8,
+   "backupDays": 31,
+   "originalRisk": 89,
+   "backupRisk": 0,
+   "originalExpectedUsd": 7562718,
+   "backupExpectedUsd": 1859194,
+   "netSavingUsd": 5703524,
+   "extraVoyageCostUsd": 550322,
+   "warRiskPremiumAvoidedUsd": 1927000,
+   "expectedDisruptionAvoidedUsd": 4326846
+  },
+  {
+   "date": "2023-12-15",
+   "score": 99,
+   "decision": "REROUTE",
+   "originalDays": 21.8,
+   "backupDays": 31,
+   "originalRisk": 94,
+   "backupRisk": 0,
+   "originalExpectedUsd": 8165037,
+   "backupExpectedUsd": 1859194,
+   "netSavingUsd": 6305843,
+   "extraVoyageCostUsd": 550322,
+   "warRiskPremiumAvoidedUsd": 2029500,
+   "expectedDisruptionAvoidedUsd": 4826665
+  },
+  {
+   "date": "2023-12-19",
+   "score": 99,
+   "decision": "REROUTE",
+   "originalDays": 21.8,
+   "backupDays": 31,
+   "originalRisk": 94,
+   "backupRisk": 0,
+   "originalExpectedUsd": 8165037,
+   "backupExpectedUsd": 1859194,
+   "netSavingUsd": 6305843,
+   "extraVoyageCostUsd": 550322,
+   "warRiskPremiumAvoidedUsd": 2029500,
+   "expectedDisruptionAvoidedUsd": 4826665
+  },
+  {
+   "date": "2023-12-22",
+   "score": 99,
+   "decision": "REROUTE",
+   "originalDays": 21.8,
+   "backupDays": 31,
+   "originalRisk": 94,
+   "backupRisk": 0,
+   "originalExpectedUsd": 8165037,
+   "backupExpectedUsd": 1859194,
+   "netSavingUsd": 6305843,
+   "extraVoyageCostUsd": 550322,
+   "warRiskPremiumAvoidedUsd": 2029500,
+   "expectedDisruptionAvoidedUsd": 4826665
+  },
+  {
+   "date": "2024-01-02",
+   "score": 99,
+   "decision": "REROUTE",
+   "originalDays": 21.8,
+   "backupDays": 31,
+   "originalRisk": 94,
+   "backupRisk": 0,
+   "originalExpectedUsd": 8165037,
+   "backupExpectedUsd": 1859194,
+   "netSavingUsd": 6305843,
+   "extraVoyageCostUsd": 550322,
+   "warRiskPremiumAvoidedUsd": 2029500,
+   "expectedDisruptionAvoidedUsd": 4826665
+  }
+ ],
+ "shipment": {
+  "originId": "SGSIN",
+  "destinationId": "NLRTM",
+  "cargo": "Containerised electronics",
+  "cargoValueUsd": 85000000,
+  "speedKnots": 16,
+  "dailyCostUsd": 60000,
+  "hullValueUsd": 120000000,
+  "critical": true
+ }
+}
