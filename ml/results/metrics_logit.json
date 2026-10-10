@@ -1,0 +1,2043 @@
+{
+ "model": "logit",
+ "seed": 42,
+ "far_target": 0.03,
+ "episode_budget_per_chokepoint_year": 1.0,
+ "persistence": {
+  "on_days": 2,
+  "off_days": 3
+ },
+ "folds_from": "2022-01-01",
+ "features": [
+  "r7",
+  "r14",
+  "slope14",
+  "accel",
+  "rz7",
+  "drawdown60",
+  "vol28",
+  "global_r7",
+  "global_frac_low",
+  "peer_r7",
+  "cape_r7",
+  "news_log",
+  "news_surge",
+  "tanker_share_chg"
+ ],
+ "H7": {
+  "naive": {
+   "all_days": {
+    "tp": 484,
+    "fp": 347,
+    "fn": 265,
+    "tn": 43430,
+    "precision": 0.5824308062575211,
+    "recall": 0.6461949265687583,
+    "f1": 0.6126582278481013,
+    "false_alarm_rate": 0.007926536765881627
+   },
+   "early_warning_stratum": {
+    "tp": 4,
+    "fp": 26,
+    "fn": 116,
+    "tn": 41141,
+    "precision": 0.13333333333333333,
+    "recall": 0.03333333333333333,
+    "f1": 0.05333333333333334,
+    "false_alarm_rate": 0.0006315738334102558
+   },
+   "events": {
+    "events": 23,
+    "detected": 2,
+    "detected_recall": 0.08695652173913043,
+    "warned_early": 2,
+    "warned_early_recall": 0.08695652173913043,
+    "median_lead_days": 5.5,
+    "alert_episodes": 90,
+    "false_alert_episodes": 54,
+    "false_alerts_per_chokepoint_year": 0.439628655492154,
+    "detail": [
+     {
+      "portname": "Bab el-Mandeb Strait",
+      "visible_start": "2023-12-21",
+      "onset": "2023-12-31",
+      "detected": false
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-18",
+      "detected": false
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-10",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-02-27",
+      "onset": "2022-02-28",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-10-31",
+      "onset": "2022-11-06",
+      "detected": true,
+      "lead_days": 4,
+      "first_alert": "2022-10-27"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-03-10",
+      "onset": "2023-03-14",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-05-23",
+      "onset": "2023-05-24",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-04-13",
+      "onset": "2025-04-14",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-12-03",
+      "onset": "2025-12-05",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-04-07",
+      "onset": "2026-04-09",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-07-06",
+      "onset": "2026-07-07",
+      "detected": false
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2023-05-28",
+      "onset": "2023-05-29",
+      "detected": false
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2024-08-15",
+      "onset": "2024-08-16",
+      "detected": false
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-11",
+      "detected": false
+     },
+     {
+      "portname": "Mindoro Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-17",
+      "detected": false
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2023-11-18",
+      "onset": "2023-11-22",
+      "detected": false
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2025-11-18",
+      "onset": "2025-11-23",
+      "detected": false
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-03-04",
+      "onset": "2026-03-04",
+      "detected": false
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-08-15",
+      "onset": "2026-09-02",
+      "detected": false
+     },
+     {
+      "portname": "Suez Canal",
+      "visible_start": "2023-12-27",
+      "onset": "2024-01-12",
+      "detected": false
+     },
+     {
+      "portname": "Taiwan Strait",
+      "visible_start": "2025-10-20",
+      "onset": "2025-10-21",
+      "detected": false
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2022-12-12",
+      "onset": "2022-12-15",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2022-12-05"
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2023-11-07",
+      "onset": "2023-11-19",
+      "detected": false
+     }
+    ]
+   }
+  },
+  "naive15": {
+   "all_days": {
+    "tp": 634,
+    "fp": 2910,
+    "fn": 115,
+    "tn": 40867,
+    "precision": 0.1788939051918736,
+    "recall": 0.8464619492656876,
+    "f1": 0.29536454693687403,
+    "false_alarm_rate": 0.06647326221531855
+   },
+   "early_warning_stratum": {
+    "tp": 24,
+    "fp": 841,
+    "fn": 96,
+    "tn": 40326,
+    "precision": 0.027745664739884393,
+    "recall": 0.2,
+    "f1": 0.04873096446700508,
+    "false_alarm_rate": 0.020428984380693273
+   },
+   "events": {
+    "events": 23,
+    "detected": 22,
+    "detected_recall": 0.9565217391304348,
+    "warned_early": 6,
+    "warned_early_recall": 0.2608695652173913,
+    "median_lead_days": -1.0,
+    "alert_episodes": 375,
+    "false_alert_episodes": 354,
+    "false_alerts_per_chokepoint_year": 2.8820100748930098,
+    "detail": [
+     {
+      "portname": "Bab el-Mandeb Strait",
+      "visible_start": "2023-12-21",
+      "onset": "2023-12-31",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-12-22"
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-18",
+      "detected": true,
+      "lead_days": 6,
+      "first_alert": "2024-08-10"
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-10",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2025-12-10"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-02-27",
+      "onset": "2022-02-28",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2022-02-28"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-10-31",
+      "onset": "2022-11-06",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2022-10-24"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-03-10",
+      "onset": "2023-03-14",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-03-11"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-05-23",
+      "onset": "2023-05-24",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-05-24"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-04-13",
+      "onset": "2025-04-14",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2025-04-14"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-12-03",
+      "onset": "2025-12-05",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2025-12-04"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-04-07",
+      "onset": "2026-04-09",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2026-04-08"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-07-06",
+      "onset": "2026-07-07",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2026-07-07"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2023-05-28",
+      "onset": "2023-05-29",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-05-29"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2024-08-15",
+      "onset": "2024-08-16",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2024-08-08"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-11",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2025-12-10"
+     },
+     {
+      "portname": "Mindoro Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-17",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2024-08-17"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2023-11-18",
+      "onset": "2023-11-22",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2023-11-11"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2025-11-18",
+      "onset": "2025-11-23",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2025-11-11"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-03-04",
+      "onset": "2026-03-04",
+      "detected": false
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-08-15",
+      "onset": "2026-09-02",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2026-08-16"
+     },
+     {
+      "portname": "Suez Canal",
+      "visible_start": "2023-12-27",
+      "onset": "2024-01-12",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-12-28"
+     },
+     {
+      "portname": "Taiwan Strait",
+      "visible_start": "2025-10-20",
+      "onset": "2025-10-21",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2025-10-21"
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2022-12-12",
+      "onset": "2022-12-15",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2022-12-05"
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2023-11-07",
+      "onset": "2023-11-19",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-11-08"
+     }
+    ]
+   }
+  },
+  "app": {
+   "all_days": {
+    "tp": 615,
+    "fp": 1797,
+    "fn": 134,
+    "tn": 41980,
+    "precision": 0.25497512437810943,
+    "recall": 0.8210947930574098,
+    "f1": 0.3891173679215438,
+    "false_alarm_rate": 0.041048952646366814
+   },
+   "early_warning_stratum": {
+    "tp": 26,
+    "fp": 395,
+    "fn": 94,
+    "tn": 40772,
+    "precision": 0.06175771971496437,
+    "recall": 0.21666666666666667,
+    "f1": 0.09611829944547134,
+    "false_alarm_rate": 0.009595064007578886
+   },
+   "events": {
+    "events": 23,
+    "detected": 20,
+    "detected_recall": 0.8695652173913043,
+    "warned_early": 7,
+    "warned_early_recall": 0.30434782608695654,
+    "median_lead_days": -1.0,
+    "alert_episodes": 254,
+    "false_alert_episodes": 233,
+    "false_alerts_per_chokepoint_year": 1.8969162357346647,
+    "detail": [
+     {
+      "portname": "Bab el-Mandeb Strait",
+      "visible_start": "2023-12-21",
+      "onset": "2023-12-31",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-12-22"
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-18",
+      "detected": true,
+      "lead_days": 6,
+      "first_alert": "2024-08-10"
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-10",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-02-27",
+      "onset": "2022-02-28",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-10-31",
+      "onset": "2022-11-06",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2022-10-24"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-03-10",
+      "onset": "2023-03-14",
+      "detected": true,
+      "lead_days": -2,
+      "first_alert": "2023-03-12"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-05-23",
+      "onset": "2023-05-24",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-05-24"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-04-13",
+      "onset": "2025-04-14",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-12-03",
+      "onset": "2025-12-05",
+      "detected": true,
+      "lead_days": -2,
+      "first_alert": "2025-12-05"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-04-07",
+      "onset": "2026-04-09",
+      "detected": true,
+      "lead_days": -2,
+      "first_alert": "2026-04-09"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-07-06",
+      "onset": "2026-07-07",
+      "detected": true,
+      "lead_days": 1,
+      "first_alert": "2026-07-05"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2023-05-28",
+      "onset": "2023-05-29",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-05-29"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2024-08-15",
+      "onset": "2024-08-16",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2024-08-08"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-11",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2025-12-10"
+     },
+     {
+      "portname": "Mindoro Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-17",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2024-08-17"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2023-11-18",
+      "onset": "2023-11-22",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2023-11-11"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2025-11-18",
+      "onset": "2025-11-23",
+      "detected": true,
+      "lead_days": -3,
+      "first_alert": "2025-11-21"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-03-04",
+      "onset": "2026-03-04",
+      "detected": true,
+      "lead_days": 0,
+      "first_alert": "2026-03-04"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-08-15",
+      "onset": "2026-09-02",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2026-08-08"
+     },
+     {
+      "portname": "Suez Canal",
+      "visible_start": "2023-12-27",
+      "onset": "2024-01-12",
+      "detected": true,
+      "lead_days": -2,
+      "first_alert": "2023-12-29"
+     },
+     {
+      "portname": "Taiwan Strait",
+      "visible_start": "2025-10-20",
+      "onset": "2025-10-21",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2025-10-21"
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2022-12-12",
+      "onset": "2022-12-15",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2022-12-05"
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2023-11-07",
+      "onset": "2023-11-19",
+      "detected": true,
+      "lead_days": -4,
+      "first_alert": "2023-11-11"
+     }
+    ]
+   }
+  },
+  "vantage": {
+   "all_days": {
+    "tp": 605,
+    "fp": 1053,
+    "fn": 144,
+    "tn": 42724,
+    "precision": 0.364897466827503,
+    "recall": 0.807743658210948,
+    "f1": 0.5027004570004154,
+    "false_alarm_rate": 0.02405372684286269
+   },
+   "early_warning_stratum": {
+    "tp": 46,
+    "fp": 443,
+    "fn": 74,
+    "tn": 40724,
+    "precision": 0.09406952965235174,
+    "recall": 0.38333333333333336,
+    "f1": 0.1510673234811166,
+    "false_alarm_rate": 0.010761046469259359
+   },
+   "events": {
+    "events": 23,
+    "detected": 16,
+    "detected_recall": 0.6956521739130435,
+    "warned_early": 11,
+    "warned_early_recall": 0.4782608695652174,
+    "median_lead_days": 4.5,
+    "alert_episodes": 123,
+    "false_alert_episodes": 104,
+    "false_alerts_per_chokepoint_year": 0.8466922253922967,
+    "detail": [
+     {
+      "portname": "Bab el-Mandeb Strait",
+      "visible_start": "2023-12-21",
+      "onset": "2023-12-31",
+      "detected": true,
+      "lead_days": 1,
+      "first_alert": "2023-12-20"
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-18",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2024-08-09"
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-10",
+      "detected": true,
+      "lead_days": 0,
+      "first_alert": "2025-12-09"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-02-27",
+      "onset": "2022-02-28",
+      "detected": true,
+      "lead_days": 0,
+      "first_alert": "2022-02-27"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-10-31",
+      "onset": "2022-11-06",
+      "detected": true,
+      "lead_days": 4,
+      "first_alert": "2022-10-27"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-03-10",
+      "onset": "2023-03-14",
+      "detected": true,
+      "lead_days": 5,
+      "first_alert": "2023-03-05"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-05-23",
+      "onset": "2023-05-24",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2023-05-16"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-04-13",
+      "onset": "2025-04-14",
+      "detected": true,
+      "lead_days": 4,
+      "first_alert": "2025-04-09"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-12-03",
+      "onset": "2025-12-05",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2025-11-26"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-04-07",
+      "onset": "2026-04-09",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2026-04-08"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-07-06",
+      "onset": "2026-07-07",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2026-06-29"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2023-05-28",
+      "onset": "2023-05-29",
+      "detected": false
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2024-08-15",
+      "onset": "2024-08-16",
+      "detected": false
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-11",
+      "detected": false
+     },
+     {
+      "portname": "Mindoro Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-17",
+      "detected": false
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2023-11-18",
+      "onset": "2023-11-22",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2023-11-11"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2025-11-18",
+      "onset": "2025-11-23",
+      "detected": false
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-03-04",
+      "onset": "2026-03-04",
+      "detected": false
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-08-15",
+      "onset": "2026-09-02",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2026-08-08"
+     },
+     {
+      "portname": "Suez Canal",
+      "visible_start": "2023-12-27",
+      "onset": "2024-01-12",
+      "detected": true,
+      "lead_days": -6,
+      "first_alert": "2024-01-02"
+     },
+     {
+      "portname": "Taiwan Strait",
+      "visible_start": "2025-10-20",
+      "onset": "2025-10-21",
+      "detected": false
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2022-12-12",
+      "onset": "2022-12-15",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2022-12-05"
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2023-11-07",
+      "onset": "2023-11-19",
+      "detected": true,
+      "lead_days": -12,
+      "first_alert": "2023-11-19"
+     }
+    ]
+   }
+  },
+  "probability": {
+   "n": 41287,
+   "base_rate": 0.0029064838811248095,
+   "positives": 120,
+   "brier_calibrated": 0.002986218877468702,
+   "brier_uncalibrated": 0.15862687772614034,
+   "brier_climatology": 0.002898036232573571,
+   "brier_skill": -0.03042841352498238,
+   "roc_auc": 0.8352738034509842,
+   "pr_auc": 0.0674799992610243,
+   "pr_auc_lift": 23.21705607908258
+  },
+  "calibration_curve": [
+   {
+    "mean_pred": 0.0005032107386784599,
+    "observed": 0.001606610052788616,
+    "n": 4357
+   },
+   {
+    "mean_pred": 0.0006877250785940321,
+    "observed": 0.0,
+    "n": 5401
+   },
+   {
+    "mean_pred": 0.0006997284467827651,
+    "observed": 0.002245508982035928,
+    "n": 2672
+   },
+   {
+    "mean_pred": 0.0007604885439221108,
+    "observed": 0.0,
+    "n": 4631
+   },
+   {
+    "mean_pred": 0.0008412655134322872,
+    "observed": 0.0011061946902654867,
+    "n": 4520
+   },
+   {
+    "mean_pred": 0.0009767419072484395,
+    "observed": 0.0,
+    "n": 4602
+   },
+   {
+    "mean_pred": 0.001041030105614954,
+    "observed": 0.0010395010395010396,
+    "n": 2886
+   },
+   {
+    "mean_pred": 0.0015298801174107321,
+    "observed": 0.002253944402704733,
+    "n": 3993
+   },
+   {
+    "mean_pred": 0.0024738855743685144,
+    "observed": 0.001897083234526915,
+    "n": 4217
+   },
+   {
+    "mean_pred": 0.018451447751914388,
+    "observed": 0.020459081836327345,
+    "n": 4008
+   }
+  ],
+  "operating_points": [
+   {
+    "fold": "2022Q1",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2022Q2",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.03
+   },
+   {
+    "fold": "2022Q3",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2022Q4",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.03
+   },
+   {
+    "fold": "2023Q1",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.03
+   },
+   {
+    "fold": "2023Q2",
+    "x_naive": 0.3,
+    "x_vantage": 0.4,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2023Q3",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2023Q4",
+    "x_naive": 0.3,
+    "x_vantage": 0.35,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2024Q1",
+    "x_naive": 0.3,
+    "x_vantage": 0.35,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2024Q2",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.12
+   },
+   {
+    "fold": "2024Q3",
+    "x_naive": 0.3,
+    "x_vantage": 0.4,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2024Q4",
+    "x_naive": 0.3,
+    "x_vantage": 0.4,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2025Q1",
+    "x_naive": 0.3,
+    "x_vantage": 0.4,
+    "t_vantage": 0.03
+   },
+   {
+    "fold": "2025Q2",
+    "x_naive": 0.3,
+    "x_vantage": 0.4,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2025Q3",
+    "x_naive": 0.3,
+    "x_vantage": 0.4,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2025Q4",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.03
+   },
+   {
+    "fold": "2026Q1",
+    "x_naive": 0.3,
+    "x_vantage": 0.4,
+    "t_vantage": 0.03
+   },
+   {
+    "fold": "2026Q2",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.05
+   },
+   {
+    "fold": "2026Q3",
+    "x_naive": 0.3,
+    "x_vantage": 0.4,
+    "t_vantage": 0.03
+   },
+   {
+    "fold": "2026Q4",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.03
+   }
+  ],
+  "test_rows": 44864
+ },
+ "H14": {
+  "naive": {
+   "all_days": {
+    "tp": 552,
+    "fp": 471,
+    "fn": 423,
+    "tn": 42898,
+    "precision": 0.5395894428152492,
+    "recall": 0.5661538461538461,
+    "f1": 0.5525525525525525,
+    "false_alarm_rate": 0.010860291913578823
+   },
+   "early_warning_stratum": {
+    "tp": 9,
+    "fp": 50,
+    "fn": 229,
+    "tn": 40852,
+    "precision": 0.15254237288135594,
+    "recall": 0.037815126050420166,
+    "f1": 0.0606060606060606,
+    "false_alarm_rate": 0.0012224341108014278
+   },
+   "events": {
+    "events": 23,
+    "detected": 8,
+    "detected_recall": 0.34782608695652173,
+    "warned_early": 5,
+    "warned_early_recall": 0.21739130434782608,
+    "median_lead_days": 7.5,
+    "alert_episodes": 120,
+    "false_alert_episodes": 79,
+    "false_alerts_per_chokepoint_year": 0.6431604404422253,
+    "detail": [
+     {
+      "portname": "Bab el-Mandeb Strait",
+      "visible_start": "2023-12-21",
+      "onset": "2023-12-31",
+      "detected": false
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-18",
+      "detected": true,
+      "lead_days": 5,
+      "first_alert": "2024-08-11"
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-10",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-02-27",
+      "onset": "2022-02-28",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-10-31",
+      "onset": "2022-11-06",
+      "detected": true,
+      "lead_days": 10,
+      "first_alert": "2022-10-21"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-03-10",
+      "onset": "2023-03-14",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-05-23",
+      "onset": "2023-05-24",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-04-13",
+      "onset": "2025-04-14",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-12-03",
+      "onset": "2025-12-05",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2025-11-19"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-04-07",
+      "onset": "2026-04-09",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-07-06",
+      "onset": "2026-07-07",
+      "detected": false
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2023-05-28",
+      "onset": "2023-05-29",
+      "detected": false
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2024-08-15",
+      "onset": "2024-08-16",
+      "detected": false
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-11",
+      "detected": true,
+      "lead_days": -2,
+      "first_alert": "2025-12-11"
+     },
+     {
+      "portname": "Mindoro Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-17",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2024-08-17"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2023-11-18",
+      "onset": "2023-11-22",
+      "detected": false
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2025-11-18",
+      "onset": "2025-11-23",
+      "detected": true,
+      "lead_days": -4,
+      "first_alert": "2025-11-22"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-03-04",
+      "onset": "2026-03-04",
+      "detected": false
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-08-15",
+      "onset": "2026-09-02",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2026-08-01"
+     },
+     {
+      "portname": "Suez Canal",
+      "visible_start": "2023-12-27",
+      "onset": "2024-01-12",
+      "detected": false
+     },
+     {
+      "portname": "Taiwan Strait",
+      "visible_start": "2025-10-20",
+      "onset": "2025-10-21",
+      "detected": false
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2022-12-12",
+      "onset": "2022-12-15",
+      "detected": true,
+      "lead_days": 11,
+      "first_alert": "2022-12-01"
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2023-11-07",
+      "onset": "2023-11-19",
+      "detected": false
+     }
+    ]
+   }
+  },
+  "naive15": {
+   "all_days": {
+    "tp": 750,
+    "fp": 2759,
+    "fn": 225,
+    "tn": 40610,
+    "precision": 0.21373610715303507,
+    "recall": 0.7692307692307693,
+    "f1": 0.33452274754683325,
+    "false_alarm_rate": 0.0636168691922802
+   },
+   "early_warning_stratum": {
+    "tp": 37,
+    "fp": 827,
+    "fn": 201,
+    "tn": 40075,
+    "precision": 0.04282407407407408,
+    "recall": 0.15546218487394958,
+    "f1": 0.06715063520871144,
+    "false_alarm_rate": 0.020219060192655614
+   },
+   "events": {
+    "events": 23,
+    "detected": 22,
+    "detected_recall": 0.9565217391304348,
+    "warned_early": 10,
+    "warned_early_recall": 0.43478260869565216,
+    "median_lead_days": -1.0,
+    "alert_episodes": 375,
+    "false_alert_episodes": 347,
+    "false_alerts_per_chokepoint_year": 2.82502117510699,
+    "detail": [
+     {
+      "portname": "Bab el-Mandeb Strait",
+      "visible_start": "2023-12-21",
+      "onset": "2023-12-31",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-12-22"
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-18",
+      "detected": true,
+      "lead_days": 6,
+      "first_alert": "2024-08-10"
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-10",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2025-12-10"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-02-27",
+      "onset": "2022-02-28",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2022-02-28"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-10-31",
+      "onset": "2022-11-06",
+      "detected": true,
+      "lead_days": 11,
+      "first_alert": "2022-10-20"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-03-10",
+      "onset": "2023-03-14",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-03-11"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-05-23",
+      "onset": "2023-05-24",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-05-24"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-04-13",
+      "onset": "2025-04-14",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2025-04-14"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-12-03",
+      "onset": "2025-12-05",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2025-11-19"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-04-07",
+      "onset": "2026-04-09",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2026-04-08"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-07-06",
+      "onset": "2026-07-07",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2026-07-07"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2023-05-28",
+      "onset": "2023-05-29",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-05-29"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2024-08-15",
+      "onset": "2024-08-16",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2024-08-01"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-11",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2025-12-10"
+     },
+     {
+      "portname": "Mindoro Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-17",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2024-08-02"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2023-11-18",
+      "onset": "2023-11-22",
+      "detected": true,
+      "lead_days": 11,
+      "first_alert": "2023-11-07"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2025-11-18",
+      "onset": "2025-11-23",
+      "detected": true,
+      "lead_days": 12,
+      "first_alert": "2025-11-06"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-03-04",
+      "onset": "2026-03-04",
+      "detected": false
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-08-15",
+      "onset": "2026-09-02",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2026-08-01"
+     },
+     {
+      "portname": "Suez Canal",
+      "visible_start": "2023-12-27",
+      "onset": "2024-01-12",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-12-28"
+     },
+     {
+      "portname": "Taiwan Strait",
+      "visible_start": "2025-10-20",
+      "onset": "2025-10-21",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2025-10-21"
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2022-12-12",
+      "onset": "2022-12-15",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2022-11-28"
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2023-11-07",
+      "onset": "2023-11-19",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2023-10-24"
+     }
+    ]
+   }
+  },
+  "app": {
+   "all_days": {
+    "tp": 716,
+    "fp": 1666,
+    "fn": 259,
+    "tn": 41703,
+    "precision": 0.30058774139378674,
+    "recall": 0.7343589743589743,
+    "f1": 0.42657134346142384,
+    "false_alarm_rate": 0.03841453572828518
+   },
+   "early_warning_stratum": {
+    "tp": 35,
+    "fp": 385,
+    "fn": 203,
+    "tn": 40517,
+    "precision": 0.08333333333333333,
+    "recall": 0.14705882352941177,
+    "f1": 0.10638297872340424,
+    "false_alarm_rate": 0.009412742653170995
+   },
+   "events": {
+    "events": 23,
+    "detected": 20,
+    "detected_recall": 0.8695652173913043,
+    "warned_early": 10,
+    "warned_early_recall": 0.43478260869565216,
+    "median_lead_days": 0.5,
+    "alert_episodes": 254,
+    "false_alert_episodes": 224,
+    "false_alerts_per_chokepoint_year": 1.823644793152639,
+    "detail": [
+     {
+      "portname": "Bab el-Mandeb Strait",
+      "visible_start": "2023-12-21",
+      "onset": "2023-12-31",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-12-22"
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-18",
+      "detected": true,
+      "lead_days": 6,
+      "first_alert": "2024-08-10"
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-10",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-02-27",
+      "onset": "2022-02-28",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-10-31",
+      "onset": "2022-11-06",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2022-10-17"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-03-10",
+      "onset": "2023-03-14",
+      "detected": true,
+      "lead_days": -2,
+      "first_alert": "2023-03-12"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-05-23",
+      "onset": "2023-05-24",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-05-24"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-04-13",
+      "onset": "2025-04-14",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-12-03",
+      "onset": "2025-12-05",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2025-11-19"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-04-07",
+      "onset": "2026-04-09",
+      "detected": true,
+      "lead_days": -2,
+      "first_alert": "2026-04-09"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-07-06",
+      "onset": "2026-07-07",
+      "detected": true,
+      "lead_days": 1,
+      "first_alert": "2026-07-05"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2023-05-28",
+      "onset": "2023-05-29",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2023-05-29"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2024-08-15",
+      "onset": "2024-08-16",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2024-08-01"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-11",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2025-12-10"
+     },
+     {
+      "portname": "Mindoro Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-17",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2024-08-02"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2023-11-18",
+      "onset": "2023-11-22",
+      "detected": true,
+      "lead_days": 10,
+      "first_alert": "2023-11-08"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2025-11-18",
+      "onset": "2025-11-23",
+      "detected": true,
+      "lead_days": 12,
+      "first_alert": "2025-11-06"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-03-04",
+      "onset": "2026-03-04",
+      "detected": true,
+      "lead_days": 0,
+      "first_alert": "2026-03-04"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-08-15",
+      "onset": "2026-09-02",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2026-08-01"
+     },
+     {
+      "portname": "Suez Canal",
+      "visible_start": "2023-12-27",
+      "onset": "2024-01-12",
+      "detected": true,
+      "lead_days": -2,
+      "first_alert": "2023-12-29"
+     },
+     {
+      "portname": "Taiwan Strait",
+      "visible_start": "2025-10-20",
+      "onset": "2025-10-21",
+      "detected": true,
+      "lead_days": -1,
+      "first_alert": "2025-10-21"
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2022-12-12",
+      "onset": "2022-12-15",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2022-11-28"
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2023-11-07",
+      "onset": "2023-11-19",
+      "detected": true,
+      "lead_days": -4,
+      "first_alert": "2023-11-11"
+     }
+    ]
+   }
+  },
+  "vantage": {
+   "all_days": {
+    "tp": 735,
+    "fp": 1275,
+    "fn": 240,
+    "tn": 42094,
+    "precision": 0.3656716417910448,
+    "recall": 0.7538461538461538,
+    "f1": 0.4924623115577889,
+    "false_alarm_rate": 0.02939887938389172
+   },
+   "early_warning_stratum": {
+    "tp": 83,
+    "fp": 631,
+    "fn": 155,
+    "tn": 40271,
+    "precision": 0.11624649859943978,
+    "recall": 0.3487394957983193,
+    "f1": 0.17436974789915966,
+    "false_alarm_rate": 0.015427118478314019
+   },
+   "events": {
+    "events": 23,
+    "detected": 17,
+    "detected_recall": 0.7391304347826086,
+    "warned_early": 11,
+    "warned_early_recall": 0.4782608695652174,
+    "median_lead_days": 10.0,
+    "alert_episodes": 142,
+    "false_alert_episodes": 117,
+    "false_alerts_per_chokepoint_year": 0.9525287535663337,
+    "detail": [
+     {
+      "portname": "Bab el-Mandeb Strait",
+      "visible_start": "2023-12-21",
+      "onset": "2023-12-31",
+      "detected": true,
+      "lead_days": 2,
+      "first_alert": "2023-12-19"
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-18",
+      "detected": true,
+      "lead_days": 7,
+      "first_alert": "2024-08-09"
+     },
+     {
+      "portname": "Balabac Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-10",
+      "detected": true,
+      "lead_days": 0,
+      "first_alert": "2025-12-09"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-02-27",
+      "onset": "2022-02-28",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2022-10-31",
+      "onset": "2022-11-06",
+      "detected": true,
+      "lead_days": 10,
+      "first_alert": "2022-10-21"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-03-10",
+      "onset": "2023-03-14",
+      "detected": true,
+      "lead_days": 12,
+      "first_alert": "2023-02-26"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2023-05-23",
+      "onset": "2023-05-24",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2023-05-09"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-04-13",
+      "onset": "2025-04-14",
+      "detected": true,
+      "lead_days": 0,
+      "first_alert": "2025-04-13"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2025-12-03",
+      "onset": "2025-12-05",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2025-11-19"
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-04-07",
+      "onset": "2026-04-09",
+      "detected": false
+     },
+     {
+      "portname": "Kerch Strait",
+      "visible_start": "2026-07-06",
+      "onset": "2026-07-07",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2026-06-22"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2023-05-28",
+      "onset": "2023-05-29",
+      "detected": false
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2024-08-15",
+      "onset": "2024-08-16",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2024-08-01"
+     },
+     {
+      "portname": "Luzon Strait",
+      "visible_start": "2025-12-09",
+      "onset": "2025-12-11",
+      "detected": true,
+      "lead_days": -2,
+      "first_alert": "2025-12-11"
+     },
+     {
+      "portname": "Mindoro Strait",
+      "visible_start": "2024-08-16",
+      "onset": "2024-08-17",
+      "detected": false
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2023-11-18",
+      "onset": "2023-11-22",
+      "detected": true,
+      "lead_days": 12,
+      "first_alert": "2023-11-06"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2025-11-18",
+      "onset": "2025-11-23",
+      "detected": true,
+      "lead_days": -5,
+      "first_alert": "2025-11-23"
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-03-04",
+      "onset": "2026-03-04",
+      "detected": false
+     },
+     {
+      "portname": "Strait of Hormuz",
+      "visible_start": "2026-08-15",
+      "onset": "2026-09-02",
+      "detected": true,
+      "lead_days": 14,
+      "first_alert": "2026-08-01"
+     },
+     {
+      "portname": "Suez Canal",
+      "visible_start": "2023-12-27",
+      "onset": "2024-01-12",
+      "detected": true,
+      "lead_days": -6,
+      "first_alert": "2024-01-02"
+     },
+     {
+      "portname": "Taiwan Strait",
+      "visible_start": "2025-10-20",
+      "onset": "2025-10-21",
+      "detected": false
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2022-12-12",
+      "onset": "2022-12-15",
+      "detected": true,
+      "lead_days": 12,
+      "first_alert": "2022-11-30"
+     },
+     {
+      "portname": "Tsugaru Strait",
+      "visible_start": "2023-11-07",
+      "onset": "2023-11-19",
+      "detected": true,
+      "lead_days": -12,
+      "first_alert": "2023-11-19"
+     }
+    ]
+   }
+  },
+  "probability": {
+   "n": 41140,
+   "base_rate": 0.005785123966942148,
+   "positives": 238,
+   "brier_calibrated": 0.005621281547827947,
+   "brier_uncalibrated": 0.17925506983731843,
+   "brier_climatology": 0.00575165630762926,
+   "brier_skill": 0.02266734186261754,
+   "roc_auc": 0.8010179280748533,
+   "pr_auc": 0.09344649761309037,
+   "pr_auc_lift": 16.152894587405623
+  },
+  "calibration_curve": [
+   {
+    "mean_pred": 0.001245161984308282,
+    "observed": 0.00290627270525551,
+    "n": 4129
+   },
+   {
+    "mean_pred": 0.0015065094233109285,
+    "observed": 0.0011856770215793219,
+    "n": 4217
+   },
+   {
+    "mean_pred": 0.0016711634735909696,
+    "observed": 0.0015415106804668576,
+    "n": 4541
+   },
+   {
+    "mean_pred": 0.0018888994661370804,
+    "observed": 0.002652519893899204,
+    "n": 4524
+   },
+   {
+    "mean_pred": 0.0020575016764033294,
+    "observed": 0.00023798191337458352,
+    "n": 4202
+   },
+   {
+    "mean_pred": 0.0022268852864568184,
+    "observed": 0.003540392661731574,
+    "n": 3107
+   },
+   {
+    "mean_pred": 0.0028178007622071677,
+    "observed": 0.001410105757931845,
+    "n": 4255
+   },
+   {
+    "mean_pred": 0.0052752151854345425,
+    "observed": 0.006969478490747416,
+    "n": 4161
+   },
+   {
+    "mean_pred": 0.00919981930613179,
+    "observed": 0.004551201011378002,
+    "n": 3955
+   },
+   {
+    "mean_pred": 0.03288006769136002,
+    "observed": 0.03383551494196098,
+    "n": 4049
+   }
+  ],
+  "operating_points": [
+   {
+    "fold": "2022Q1",
+    "x_naive": 0.3,
+    "x_vantage": 0.25,
+    "t_vantage": 0.03
+   },
+   {
+    "fold": "2022Q2",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2022Q3",
+    "x_naive": 0.3,
+    "x_vantage": 0.25,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2022Q4",
+    "x_naive": 0.3,
+    "x_vantage": 0.25,
+    "t_vantage": 0.12
+   },
+   {
+    "fold": "2023Q1",
+    "x_naive": 0.3,
+    "x_vantage": 0.25,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2023Q2",
+    "x_naive": 0.3,
+    "x_vantage": 0.35,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2023Q3",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.03
+   },
+   {
+    "fold": "2023Q4",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.02
+   },
+   {
+    "fold": "2024Q1",
+    "x_naive": 0.3,
+    "x_vantage": 0.35,
+    "t_vantage": 0.05
+   },
+   {
+    "fold": "2024Q2",
+    "x_naive": 0.25,
+    "x_vantage": 0.4,
+    "t_vantage": 0.05
+   },
+   {
+    "fold": "2024Q3",
+    "x_naive": 0.25,
+    "x_vantage": 0.3,
+    "t_vantage": 0.05
+   },
+   {
+    "fold": "2024Q4",
+    "x_naive": 0.25,
+    "x_vantage": 0.4,
+    "t_vantage": 0.08
+   },
+   {
+    "fold": "2025Q1",
+    "x_naive": 0.25,
+    "x_vantage": 0.3,
+    "t_vantage": 0.08
+   },
+   {
+    "fold": "2025Q2",
+    "x_naive": 0.25,
+    "x_vantage": 0.35,
+    "t_vantage": 0.08
+   },
+   {
+    "fold": "2025Q3",
+    "x_naive": 0.25,
+    "x_vantage": 0.35,
+    "t_vantage": 0.05
+   },
+   {
+    "fold": "2025Q4",
+    "x_naive": 0.25,
+    "x_vantage": 0.4,
+    "t_vantage": 0.05
+   },
+   {
+    "fold": "2026Q1",
+    "x_naive": 0.25,
+    "x_vantage": 0.35,
+    "t_vantage": 0.05
+   },
+   {
+    "fold": "2026Q2",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.08
+   },
+   {
+    "fold": "2026Q3",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.08
+   },
+   {
+    "fold": "2026Q4",
+    "x_naive": 0.3,
+    "x_vantage": 0.3,
+    "t_vantage": 0.08
+   }
+  ],
+  "test_rows": 44864
+ }
+}

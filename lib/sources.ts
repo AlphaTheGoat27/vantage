@@ -1,6 +1,7 @@
-import { cached, fetchJson, fetchText } from "./cache";
+import { cached, fallbackInfo, fetchJson, fetchText, resilient } from "./cache";
 import type { LonLat } from "./geo";
 import { WATCH_ZONES, type WatchZone } from "./places";
+import { MODEL_NEWS_QUERIES, type ChokepointInput, type DailyRow, type NewsByZone } from "./model";
 import type { Chokepoint, Evidence, Hazard, SourceStatus } from "./types";
 
 const MIN = 60_000;
@@ -8,9 +9,13 @@ const PORTWATCH = "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/ser
 
 type Result<T> = { status: SourceStatus; data: T };
 
-async function guard<T>(name: string, url: string, empty: T, run: () => Promise<{ data: T; count: number; note?: string }>): Promise<Result<T>> {
+async function guard<T>(name: string, url: string, empty: T, run: () => Promise<{ data: T; count: number; note?: string }>, keys: string[] = []): Promise<Result<T>> {
   try {
     const r = await run();
+    const snapshotAt = fallbackInfo(keys);
+    if (snapshotAt) {
+      return { status: { name, url, ok: true, fallback: true, snapshotAt, count: r.count, note: `live feed unreachable: showing bundled snapshot from ${snapshotAt}` }, data: r.data };
+    }
     return { status: { name, url, ok: true, count: r.count, note: r.note }, data: r.data };
   } catch (e) {
     return { status: { name, url, ok: false, count: 0, note: e instanceof Error ? e.message : String(e) }, data: empty };
@@ -18,45 +23,114 @@ async function guard<T>(name: string, url: string, empty: T, run: () => Promise<
 }
 
 // ---------- IMF PortWatch: daily transit counts through 28 chokepoints ----------
-type PwRow = { date: string; portid: string; portname: string; n_total: number };
+type PwRow = { date: string; portid: string; portname: string; n_total: number; n_tanker: number; n_container: number; n_dry_bulk: number };
+const PW_DAYS = 215; // the trained model needs ~200 days of history (baseline, shares, rolling medians)
+
+async function loadPortwatch() {
+  return resilient("portwatch", 60 * MIN, async () => {
+    const [meta, rows] = await Promise.all([
+      fetchJson<{ features: { attributes: { portid: string; portname: string; lat: number; lon: number } }[] }>(
+        `${PORTWATCH}/PortWatch_chokepoints_database/FeatureServer/0/query?where=1%3D1&outFields=portid,portname,lat,lon&returnGeometry=false&f=json`,
+      ),
+      (async () => {
+        const since = new Date(Date.now() - PW_DAYS * 86400_000).toISOString().slice(0, 10);
+        const out: PwRow[] = [];
+        for (let offset = 0; offset < 9000; offset += 1000) {
+          const page = await fetchJson<{ features: { attributes: PwRow }[]; exceededTransferLimit?: boolean }>(
+            `${PORTWATCH}/Daily_Chokepoints_Data/FeatureServer/0/query?where=${encodeURIComponent(`date >= DATE '${since}'`)}&outFields=date,portid,portname,n_total,n_tanker,n_container,n_dry_bulk&orderByFields=date%20DESC&resultOffset=${offset}&resultRecordCount=1000&f=json`,
+            { timeoutMs: 25000 },
+          );
+          out.push(...page.features.map((f) => f.attributes));
+          if (!page.exceededTransferLimit) break;
+        }
+        return out;
+      })(),
+    ]);
+    return { meta: meta.features.map((f) => f.attributes), rows };
+  });
+}
+
+/** Daily rows per chokepoint, in the shape the trained model expects. */
+export async function portwatchHistory(): Promise<ChokepointInput[]> {
+  const { rows } = await loadPortwatch();
+  const by = new Map<string, DailyRow[]>();
+  for (const r of rows) {
+    const date = String(r.date).slice(0, 10);
+    const list = by.get(r.portname) ?? [];
+    list.push({ date, total: r.n_total, tanker: r.n_tanker, container: r.n_container, dryBulk: r.n_dry_bulk });
+    by.set(r.portname, list);
+  }
+  return [...by].map(([name, rows]) => ({ name, rows }));
+}
 
 export function portwatchChokepoints(): Promise<Result<Chokepoint[]>> {
-  return guard("IMF PortWatch chokepoint transits", "https://portwatch.imf.org", [], () =>
-    cached("portwatch", 60 * MIN, async () => {
-      const [meta, rows] = await Promise.all([
-        fetchJson<{ features: { attributes: { portid: string; portname: string; lat: number; lon: number } }[] }>(
-          `${PORTWATCH}/PortWatch_chokepoints_database/FeatureServer/0/query?where=1%3D1&outFields=portid,portname,lat,lon&returnGeometry=false&f=json`,
-        ),
-        (async () => {
-          const since = new Date(Date.now() - 110 * 86400_000).toISOString().slice(0, 10);
-          const out: PwRow[] = [];
-          for (let offset = 0; offset < 6000; offset += 1000) {
-            const page = await fetchJson<{ features: { attributes: PwRow }[]; exceededTransferLimit?: boolean }>(
-              `${PORTWATCH}/Daily_Chokepoints_Data/FeatureServer/0/query?where=${encodeURIComponent(`date >= DATE '${since}'`)}&outFields=date,portid,portname,n_total&orderByFields=date%20DESC&resultOffset=${offset}&resultRecordCount=1000&f=json`,
+  return guard("IMF PortWatch chokepoint transits", "https://portwatch.imf.org", [], async () => {
+    const { meta, rows } = await loadPortwatch();
+    const byPort = new Map<string, PwRow[]>();
+    for (const r of rows) {
+      const list = byPort.get(r.portid) ?? [];
+      list.push(r);
+      byPort.set(r.portid, list);
+    }
+    const data: Chokepoint[] = meta.map((a) => {
+      const list = (byPort.get(a.portid) ?? []).sort((x, y) => (x.date < y.date ? 1 : -1)).slice(0, 110);
+      const recent = list.slice(0, 7), base = list.slice(7, 97);
+      const avg = (l: PwRow[]) => (l.length ? l.reduce((s, r) => s + r.n_total, 0) / l.length : undefined);
+      const avg7 = avg(recent), baseline = avg(base);
+      const changePct = avg7 !== undefined && baseline ? ((avg7 - baseline) / baseline) * 100 : undefined;
+      const asOf = list[0]?.date;
+      return { id: a.portid, name: a.portname, center: [a.lon, a.lat] as LonLat, avg7, baseline, changePct, asOf };
+    });
+    const asOf = data.find((c) => c.asOf)?.asOf;
+    return { data, count: data.length, note: asOf ? `data as of ${asOf} (PortWatch publishes with a few days' lag)` : undefined };
+  }, ["portwatch"]);
+}
+
+// ---------- Weekly headline counts per zone (feature for the trained model) ----------
+const dayMs = 86_400_000;
+const mondayOf = (t: number) => {
+  const d = Math.floor(t / dayMs);
+  return (d - ((d + 3) % 7)) * dayMs; // 1970-01-01 was a Thursday; Monday-aligned
+};
+
+async function weekCount(query: string, startMs: number): Promise<number> {
+  const a = new Date(startMs).toISOString().slice(0, 10), b = new Date(startMs + 7 * dayMs).toISOString().slice(0, 10);
+  const q = encodeURIComponent(`${query} after:${a} before:${b}`);
+  const xml = await fetchText(`https://news.google.com/rss/search?q=${q}&hl=en-US&gl=US&ceid=US:en`);
+  return (xml.match(/<item>/g) ?? []).length;
+}
+
+/** Monday-aligned weekly counts for the model's news zones, covering the 8-week baseline plus the latest complete week at `asOf`. */
+export function newsWeekly(asOf: string): Promise<Result<NewsByZone>> {
+  return guard(
+    "Google News weekly headline counts (model feature)",
+    "https://news.google.com",
+    {} as NewsByZone,
+    async () => {
+      const data = await resilient<NewsByZone>("news-weekly", 6 * 60 * MIN, async () => {
+        const latest = mondayOf(Date.parse(asOf + "T00:00:00Z") - 7 * dayMs);
+        const starts = Array.from({ length: 9 }, (_, i) => latest - (8 - i) * 7 * dayMs);
+        const out: NewsByZone = {};
+        await Promise.all(
+          Object.entries(MODEL_NEWS_QUERIES).map(async ([zone, q]) => {
+            const weeks = await Promise.all(
+              starts.map((s) =>
+                weekCount(q, s).then(
+                  (n) => ({ weekStart: new Date(s).toISOString().slice(0, 10), n }),
+                  () => null,
+                ),
+              ),
             );
-            out.push(...page.features.map((f) => f.attributes));
-            if (!page.exceededTransferLimit) break;
-          }
-          return out;
-        })(),
-      ]);
-      const byPort = new Map<string, PwRow[]>();
-      for (const r of rows) {
-        const list = byPort.get(r.portid) ?? [];
-        list.push(r);
-        byPort.set(r.portid, list);
-      }
-      const data: Chokepoint[] = meta.features.map(({ attributes: a }) => {
-        const list = (byPort.get(a.portid) ?? []).sort((x, y) => (x.date < y.date ? 1 : -1));
-        const recent = list.slice(0, 7), base = list.slice(7, 97);
-        const avg = (l: PwRow[]) => (l.length ? l.reduce((s, r) => s + r.n_total, 0) / l.length : undefined);
-        const avg7 = avg(recent), baseline = avg(base);
-        const changePct = avg7 !== undefined && baseline ? ((avg7 - baseline) / baseline) * 100 : undefined;
-        return { id: a.portid, name: a.portname, center: [a.lon, a.lat] as LonLat, avg7, baseline, changePct, asOf: list[0]?.date };
+            out[zone] = weeks.filter((w): w is NonNullable<typeof w> => w !== null);
+          }),
+        );
+        if (!Object.values(out).some((w) => w.length >= 5)) throw new Error("Google News weekly counts unavailable");
+        return out;
       });
-      const asOf = data.find((c) => c.asOf)?.asOf;
-      return { data, count: data.length, note: asOf ? `data as of ${asOf} (PortWatch publishes with a few days' lag)` : undefined };
-    }),
+      const count = Object.values(data).reduce((n, w) => n + w.length, 0);
+      return { data, count, note: `${Object.keys(data).length} zones, ${count} weekly counts` };
+    },
+    ["news-weekly"],
   );
 }
 
@@ -71,7 +145,7 @@ type GdacsFeature = {
 
 export function gdacsHazards(): Promise<Result<Hazard[]>> {
   return guard("GDACS disaster alerts", "https://www.gdacs.org", [], () =>
-    cached("gdacs", 20 * MIN, async () => {
+    resilient("gdacs", 20 * MIN, async () => {
       const d = await fetchJson<{ features: GdacsFeature[] }>(
         "https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=TC;EQ;VO&alertlevel=Green;Orange;Red",
       );
@@ -119,6 +193,7 @@ export function gdacsHazards(): Promise<Result<Hazard[]>> {
       }
       return { data: out, count: out.length };
     }),
+    ["gdacs"],
   );
 }
 
@@ -127,7 +202,7 @@ type EonetEvent = { id: string; title: string; link: string; categories: { id: s
 
 export function eonetHazards(): Promise<Result<Hazard[]>> {
   return guard("NASA EONET natural events", "https://eonet.gsfc.nasa.gov", [], () =>
-    cached("eonet", 30 * MIN, async () => {
+    resilient("eonet", 30 * MIN, async () => {
       const d = await fetchJson<{ events: EonetEvent[] }>("https://eonet.gsfc.nasa.gov/api/v3/events?status=open&days=10&category=severeStorms,seaLakeIce");
       const out: Hazard[] = [];
       for (const e of d.events) {
@@ -145,6 +220,7 @@ export function eonetHazards(): Promise<Result<Hazard[]>> {
       }
       return { data: out, count: out.length };
     }),
+    ["eonet"],
   );
 }
 
@@ -172,7 +248,7 @@ function parseRss(xml: string): Omit<Headline, "weight">[] {
 }
 
 async function zoneNews(z: WatchZone): Promise<Headline[]> {
-  return cached(`news-${z.id}`, 30 * MIN, async () => {
+  return resilient(`news-${z.id}`, 30 * MIN, async () => {
     const q = encodeURIComponent(`${z.query} when:7d`);
     const xml = await fetchText(`https://news.google.com/rss/search?q=${q}&hl=en-US&gl=US&ceid=US:en`);
     const seen = new Set<string>();
@@ -215,7 +291,7 @@ export async function newsSignals(): Promise<{ statuses: SourceStatus[]; zones: 
       const data = res.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
       if (!data.length) throw new Error((res[0] as PromiseRejectedResult).reason?.message ?? "no feeds");
       return { data, count: data.reduce((s, x) => s + x.h.length, 0), note: `${data.length}/${WATCH_ZONES.length} zones` };
-    }),
+    }, WATCH_ZONES.map((z) => `news-${z.id}`)),
     guard("GDELT 2.0 global news", "https://www.gdeltproject.org", [] as Omit<Headline, "weight">[], async () => {
       const data = await gdeltMaritime();
       return { data, count: data.length };

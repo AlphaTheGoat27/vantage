@@ -1,0 +1,11 @@
+{
+ "n": 44682,
+ "mae_model": 0.07311732745167782,
+ "mae_persistence": 0.08733701069013258,
+ "coverage_80": 0.7872521373259925,
+ "mean_interval_width": 0.21806634443600378,
+ "mae_improvement_pct": 16.281394481092903,
+ "big_drop_n": 872,
+ "big_drop_mae_model": 0.30281397506144436,
+ "big_drop_mae_persistence": 0.21488825321806598
+}

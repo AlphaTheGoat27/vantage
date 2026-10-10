@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:model": "tsx lib/model.test.ts",
+    "snapshot": "tsx --env-file=.env.local scripts/snapshot-sources.mts",
+    "case:redsea": "tsx scripts/case-study-redsea.mts"
   },
   "dependencies": {
     "next": "16.4.0",
@@ -22,6 +25,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

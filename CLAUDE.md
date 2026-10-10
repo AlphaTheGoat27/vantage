@@ -37,12 +37,20 @@ npm run dev
 Gemini model order: `GEMINI_MODEL` env, then gemini-3.5-flash, gemini-flash-lite-latest, gemini-flash-latest. `gemini-2.5-flash` is closed to new keys. gemini-3.8-flash was too slow (>2 min).
 Checks: `npx eslint .`, `npx tsc --noEmit`, `npm run build`.
 
-## Status (2026-10-10 ~10:00 UTC)
-- Draft PR #1 (`claude/project-thread-dd6yj4` → main) has the full end-to-end build; Gemini tested live and working.
-- Vercel preview builds green but is behind Vercel login; merge to main (or turn off Deployment Protection) for a public link. `GEMINI_API_KEY` must be set in Vercel for Production and Preview.
-- A first full plan takes ~25–35 s (live fetches + 3 Gemini calls), cached afterwards.
+## Trained model, pipeline, AIS (added 2026-10-10 evening, branch feat/trained-model-backtest)
+- `ml/` (Python, seed 42, `python ml/run_all.py`): walk-forward backtest on IMF PortWatch daily transits + weekly Google News counts (`data/news_weekly.csv`), calibrated logistic model (production) vs LightGBM, 7-day quantile forecast, charts in `slides/`. Honest write-up: `ml/README.md`, `ml/RESULTS.md`. The model is a modest gain over the old traffic score; on the Red Sea case the transit model alerted as carriers paused, the news layer was ~4 weeks earlier.
+- `lib/model.ts` evaluates `lib/data/vantage-model.json` in TypeScript (features, logistic, isotonic, forecast trees, persistence/hysteresis). `npm run test:model` proves parity with Python. `lib/confidence.ts` gives each hazard a 0-100 confidence + reason.
+- `lib/planner.ts` computes the priority ranking (urgency x USD impact x risk x confidence) and route justification itself and emits pipeline steps; `/api/plan?stream=1` streams them (NDJSON); `components/Pipeline.tsx` renders Detect, Predict, Categorize, Prioritize, Decide, Explain.
+- Resilience: `lib/cache.ts resilient()` falls back to bundled `lib/data/snapshots/*.json` (refresh with `npm run snapshot`); the UI marks sources live / snapshot / down. `signals.filtering` lists signals dismissed as false alarms.
+- `lib/ais.ts` + `/api/ais`: AISStream.io sampled for ~8 s server-side, cached 90 s, needs `AISSTREAM_API_KEY` (server-side only). Not testable without a key.
+- Env on Vercel (Production + Preview): `GEMINI_API_KEY`, optional `AISSTREAM_API_KEY`. Turn Deployment Protection off for the public link.
+- Gotcha: PortWatch `date` is a `YYYY-MM-DD` string. The Bash tool in this environment halves backslashes inside heredocs, so write files containing backslash escapes with the Write/Edit tools instead.
+
+## Status
+- PR #1 (full end-to-end build) is merged to `main`; production is https://vantage-rust-alpha.vercel.app. The trained-model work is on `feat/trained-model-backtest` (PR open for review).
+- A first full plan takes ~20-35 s cold (live fetches + Gemini), cached afterwards; the UI now streams the pipeline stages.
 
 ## Ideas not done yet
-- Proof slide: backtest the Red Sea crisis (PortWatch shows Suez/Bab el-Mandeb transits falling after Nov 2023) to show when our score would have crossed the threshold.
-- Live AIS ship dots (needs a free AISStream.io key).
-- Streaming progress in the UI while a plan runs; mobile layout polish; PDF slides.
+- Live AIS test with a real key; more AIS anomaly tuning.
+- Historical incident feed (ASAM was down; ACLED/Kaggle need keys) to train incident features.
+- Mobile layout polish; PDF slides (charts are ready in `slides/`).
