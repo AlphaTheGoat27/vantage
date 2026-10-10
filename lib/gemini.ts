@@ -5,7 +5,7 @@ const API = "https://generativelanguage.googleapis.com/v1beta/models";
 export const geminiEnabled = () => Boolean(process.env.GEMINI_API_KEY);
 
 const models = () =>
-  [process.env.GEMINI_MODEL, "gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite"].filter(
+  [process.env.GEMINI_MODEL, "gemini-2.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest"].filter(
     (m, i, a): m is string => Boolean(m) && a.indexOf(m) === i,
   );
 
@@ -21,7 +21,7 @@ export async function geminiJson<T>(opts: {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY is not set");
   const order = workingModel ? [workingModel, ...models().filter((m) => m !== workingModel)] : models();
-  let lastErr: unknown;
+  const errors: string[] = [];
   for (const model of order) {
     try {
       const res = await fetch(`${API}/${model}:generateContent`, {
@@ -39,7 +39,7 @@ export async function geminiJson<T>(opts: {
         }),
       });
       if (res.status === 404 || res.status === 400) {
-        lastErr = new Error(`${model}: ${res.status} ${(await res.text()).slice(0, 200)}`);
+        errors.push(`${model}: ${res.status} ${(await res.text()).slice(0, 160)}`);
         continue;
       }
       if (!res.ok) throw new Error(`${model}: ${res.status} ${(await res.text()).slice(0, 300)}`);
@@ -48,9 +48,9 @@ export async function geminiJson<T>(opts: {
       workingModel = model;
       return { data: JSON.parse(text) as T, model };
     } catch (e) {
-      lastErr = e;
+      errors.push(e instanceof Error ? e.message : String(e));
       // rate limits and timeouts: try the next (often lighter) model
     }
   }
-  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+  throw new Error(errors.join(" | "));
 }
