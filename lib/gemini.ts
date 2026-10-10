@@ -5,7 +5,7 @@ const API = "https://generativelanguage.googleapis.com/v1beta/models";
 export const geminiEnabled = () => Boolean(process.env.GEMINI_API_KEY);
 
 const models = () =>
-  [process.env.GEMINI_MODEL, "gemini-2.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest"].filter(
+  [process.env.GEMINI_MODEL, "gemini-3.5-flash", "gemini-flash-lite-latest", "gemini-flash-latest"].filter(
     (m, i, a): m is string => Boolean(m) && a.indexOf(m) === i,
   );
 
@@ -26,7 +26,7 @@ export async function geminiJson<T>(opts: {
     try {
       const res = await fetch(`${API}/${model}:generateContent`, {
         method: "POST",
-        signal: AbortSignal.timeout(opts.timeoutMs ?? 40000),
+        signal: AbortSignal.timeout(opts.timeoutMs ?? 25000),
         headers: { "content-type": "application/json", "x-goog-api-key": key },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: opts.system }] },
