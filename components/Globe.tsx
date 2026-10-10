@@ -309,7 +309,7 @@ export default function Globe(props: Props) {
       const mean = pts.reduce((acc, v) => Cesium.Cartesian3.add(acc, v, acc), new Cesium.Cartesian3());
       const centre = Cesium.Cartographic.fromCartesian(Cesium.Cartesian3.multiplyByScalar(Cesium.Cartesian3.normalize(mean, mean), 6.371e6, mean));
       const spread = Math.max(...pts.map((v) => Math.acos(Math.min(1, Cesium.Cartesian3.dot(v, Cesium.Cartesian3.normalize(Cesium.Cartesian3.fromRadians(centre.longitude, centre.latitude), new Cesium.Cartesian3()))))));
-      const height = Math.min(2.4e7, Math.max(3.5e6, spread * 6.371e6 * 2.1));
+      const height = Math.min(2.4e7, Math.max(3.5e6, spread * 6.371e6 * 2.6));
       viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromRadians(centre.longitude, centre.latitude, height), duration: 2.2 });
     }
   }, [ready, props.plan, props.activeRouteId]);
