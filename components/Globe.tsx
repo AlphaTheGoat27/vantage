@@ -72,12 +72,11 @@ type Props = {
 const insetsOf = (p: Props) => p.insets ?? { left: p.leftInset ?? 0, bottom: 0 };
 
 // ---------------------------------------------------------------- idle rotation
-const IDLE_MS = 12_000;
+const IDLE_MS = 10_000;
 /** full speed: one revolution every 4 minutes */
 const SPIN = (2 * Math.PI) / 240;
 /** critically damped ramp-up: natural frequency in rad/s (about 2.4 s to 95% of full speed) */
 const SPIN_W0 = 2;
-const INPUT_EVENTS = ["pointerdown", "pointermove", "wheel", "touchstart", "keydown"] as const;
 
 // ---------------------------------------------------------------- drawing helpers
 const FONT_FALLBACK = `-apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "Segoe UI", sans-serif`;
@@ -344,7 +343,7 @@ export default function Globe(props: Props) {
   const [fontEpoch, setFontEpoch] = useState(0);
 
   // motion state lives in refs: the render loop must never trigger React renders
-  const lastInput = useRef(0);
+  const lastInput = useRef(-IDLE_MS);
   const flightId = useRef(0);
   const flying = useRef(false);
   const reduceMotion = useRef(false);
@@ -377,18 +376,46 @@ export default function Globe(props: Props) {
     return () => mq.removeEventListener("change", on);
   }, []);
 
-  // ---- any input anywhere stops the idle spin instantly and restarts the idle timer
+  // ---- any action on the earth stops the idle spin instantly and pauses for 10 s
   useEffect(() => {
-    lastInput.current = performance.now();
-    const onInput = () => {
+    const globeEl = el.current;
+    if (!globeEl) return;
+    const onGlobePointer = (e: PointerEvent) => {
+      if (e.type === "pointermove" && e.buttons === 0) return;
+      lastInput.current = performance.now();
+    };
+    const onWheel = () => {
+      lastInput.current = performance.now();
+    };
+    const onTouch = () => {
       lastInput.current = performance.now();
     };
     const opts: AddEventListenerOptions = { capture: true, passive: true };
-    for (const ev of INPUT_EVENTS) window.addEventListener(ev, onInput, opts);
+    globeEl.addEventListener("pointerdown", onGlobePointer, opts);
+    globeEl.addEventListener("pointermove", onGlobePointer, opts);
+    globeEl.addEventListener("wheel", onWheel, opts);
+    globeEl.addEventListener("touchstart", onTouch, opts);
+    globeEl.addEventListener("touchmove", onTouch, opts);
+    window.addEventListener("pointermove", onGlobePointer, opts);
     return () => {
-      for (const ev of INPUT_EVENTS) window.removeEventListener(ev, onInput, opts);
+      globeEl.removeEventListener("pointerdown", onGlobePointer, opts);
+      globeEl.removeEventListener("pointermove", onGlobePointer, opts);
+      globeEl.removeEventListener("wheel", onWheel, opts);
+      globeEl.removeEventListener("touchstart", onTouch, opts);
+      globeEl.removeEventListener("touchmove", onTouch, opts);
+      window.removeEventListener("pointermove", onGlobePointer, opts);
     };
   }, []);
+
+  // When selection on earth changes, pause idle spin
+  const isFirstMount = useRef(true);
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    lastInput.current = performance.now();
+  }, [props.selectedHazardId, props.selectedShipMmsi, props.activeRouteId, props.plan]);
 
   // ---- create viewer once
   useEffect(() => {
@@ -560,7 +587,11 @@ export default function Globe(props: Props) {
         viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
 
         const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
+        const recordAction = () => {
+          lastInput.current = performance.now();
+        };
         handler.setInputAction((ev: { position: CesiumNS.Cartesian2 }) => {
+          recordAction();
           const p = propsRef.current;
           if (p.pickMode) {
             const cart = viewer.camera.pickEllipsoid(ev.position, scene.globe.ellipsoid);
@@ -602,6 +633,10 @@ export default function Globe(props: Props) {
           p.onSelectHazard(hazardId);
           if (p.selectedShipMmsi != null) p.onSelectShip?.(null);
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+        handler.setInputAction(recordAction, Cesium.ScreenSpaceEventType.RIGHT_CLICK);
+        handler.setInputAction(recordAction, Cesium.ScreenSpaceEventType.MIDDLE_CLICK);
+        handler.setInputAction(recordAction, Cesium.ScreenSpaceEventType.PINCH_START);
+        handler.setInputAction(recordAction, Cesium.ScreenSpaceEventType.PINCH_MOVE);
         cleanups.push(() => handler.destroy());
 
         viewerRef.current = viewer;

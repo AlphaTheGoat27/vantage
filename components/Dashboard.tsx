@@ -411,7 +411,7 @@ export default function Dashboard() {
         selectedShipMmsi={selectedShip}
         onSelectShip={selectShip}
         insets={isDesktop ? { left: SIDEBAR_RIGHT_EDGE, bottom: 0 } : { left: 0, bottom: PEEK_HEIGHT }}
-        autoRotate={!pickMode && selectedShip === null}
+        autoRotate={!pickMode}
       />
 
       {/* sidebar (desktop) or sheet (mobile) */}
