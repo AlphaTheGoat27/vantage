@@ -1,4 +1,4 @@
-# Vantage
+<h1 align="center"><strong>Vantage</strong></h1>
 
 **Know what is on your shipping lane before your ship does.**
 
