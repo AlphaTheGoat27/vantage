@@ -80,10 +80,10 @@ const SPIN_W0 = 2;
 
 // ---------------------------------------------------------------- drawing helpers
 const FONT_FALLBACK = `-apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "Segoe UI", sans-serif`;
-const LABEL_BG = "rgba(28,28,30,0.78)";
+const LABEL_BG = "rgba(18,22,30,0.85)";
 const INK = SYS.ink;
-const INK_2 = "rgba(235,235,245,0.64)";
-const INK_3 = "rgba(235,235,245,0.5)";
+const INK_2 = "rgba(245,245,247,0.72)";
+const INK_3 = "rgba(245,245,247,0.52)";
 const SHIP_HEIGHT = 1000;
 /** dead-reckoning cap */
 const MAX_EXTRAPOLATE_H = 0.5;
@@ -117,15 +117,14 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
 
 type PillPart = { text: string; color: string; weight?: number };
 /**
- * A rounded label pill (soft dark material, no outline on the glyphs), returned as a data URL so that Cesium's
- * texture atlas caches it by content instead of adding a new copy on every rebuild.
+ * A rounded Apple crystal glass label pill with specular bevel and glowing dot.
  */
 function pill(parts: PillPart[], opts: { size: number; dot?: string; selected?: boolean }, px: number, family: string): Img {
   const key = `pill|${px}|${family}|${opts.size}|${opts.dot ?? ""}|${opts.selected ? 1 : 0}|${parts.map((p) => `${p.text}~${p.color}~${p.weight ?? 0}`).join("|")}`;
   const hit = imgCache.get(key);
   if (hit) return hit;
   const R = drawScale(px);
-  const padX = 7, gap = 5, dotD = opts.dot ? 6 : 0, h = Math.round(opts.size + 8);
+  const padX = 8, gap = 5, dotD = opts.dot ? 7 : 0, h = Math.round(opts.size + 9);
   const c = document.createElement("canvas");
   const g = c.getContext("2d")!;
   const font = (w: number) => `${w} ${opts.size * R}px ${family}`;
@@ -138,14 +137,39 @@ function pill(parts: PillPart[], opts: { size: number; dot?: string; selected?: 
   c.width = w * R;
   c.height = h * R;
   g.scale(R, R);
-  roundRect(g, 0.5, 0.5, w - 1, h - 1, 6);
-  g.fillStyle = LABEL_BG;
+
+  // Glass background with subtle light reflection
+  roundRect(g, 0.5, 0.5, w - 1, h - 1, 7);
+  const grad = g.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, opts.selected ? "rgba(32, 38, 52, 0.95)" : "rgba(26, 30, 42, 0.88)");
+  grad.addColorStop(1, opts.selected ? "rgba(16, 20, 28, 0.9)" : "rgba(14, 16, 22, 0.82)");
+  g.fillStyle = grad;
   g.fill();
-  g.lineWidth = opts.selected ? 1 : 0.5;
-  g.strokeStyle = opts.selected ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.1)";
+
+  // Glass border
+  g.lineWidth = opts.selected ? 1.5 : 0.75;
+  g.strokeStyle = opts.selected ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.18)";
   g.stroke();
+
+  // Top specular reflection line
+  g.beginPath();
+  g.moveTo(5, 1.25);
+  g.lineTo(w - 5, 1.25);
+  g.strokeStyle = opts.selected ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.38)";
+  g.lineWidth = 0.75;
+  g.stroke();
+
   let x = padX;
   if (opts.dot) {
+    // Outer luminous glow
+    g.beginPath();
+    g.arc(x + dotD / 2, h / 2, dotD / 2 + 2, 0, Math.PI * 2);
+    g.fillStyle = opts.dot;
+    g.globalAlpha = 0.3;
+    g.fill();
+    g.globalAlpha = 1.0;
+
+    // Core vivid dot
     g.beginPath();
     g.arc(x + dotD / 2, h / 2, dotD / 2, 0, Math.PI * 2);
     g.fillStyle = opts.dot;
@@ -165,28 +189,41 @@ function pill(parts: PillPart[], opts: { size: number; dot?: string; selected?: 
   return img;
 }
 
-/** Route endpoint marker: white ring around a coloured centre, with a soft shadow. */
+/** Route endpoint marker: Crystal glass pin with specular catchlight and glowing center. */
 function pinImage(fill: string, px: number): Img {
   const key = `pin|${px}|${fill}`;
   const hit = imgCache.get(key);
   if (hit) return hit;
-  const R = drawScale(px), s = 18;
+  const R = drawScale(px), s = 20;
   const c = document.createElement("canvas");
   c.width = c.height = s * R;
   const g = c.getContext("2d")!;
   g.scale(R, R);
+
+  // Soft drop shadow
   g.beginPath();
-  g.arc(s / 2, s / 2, 8.5, 0, Math.PI * 2);
-  g.fillStyle = "rgba(0,0,0,0.35)";
+  g.arc(s / 2, s / 2, 9.5, 0, Math.PI * 2);
+  g.fillStyle = "rgba(0,0,0,0.45)";
   g.fill();
+
+  // Outer crisp crystal white ring
   g.beginPath();
-  g.arc(s / 2, s / 2, 7, 0, Math.PI * 2);
-  g.fillStyle = "#fff";
+  g.arc(s / 2, s / 2, 7.5, 0, Math.PI * 2);
+  g.fillStyle = "#ffffff";
   g.fill();
+
+  // Vivid colored core
   g.beginPath();
-  g.arc(s / 2, s / 2, 4.5, 0, Math.PI * 2);
+  g.arc(s / 2, s / 2, 5, 0, Math.PI * 2);
   g.fillStyle = fill;
   g.fill();
+
+  // Specular catchlight
+  g.beginPath();
+  g.arc(s / 2 - 1.2, s / 2 - 1.2, 1.4, 0, Math.PI * 2);
+  g.fillStyle = "rgba(255,255,255,0.9)";
+  g.fill();
+
   const img = { url: c.toDataURL(), w: s, h: s };
   imgCache.set(key, img);
   return img;
@@ -195,7 +232,6 @@ function pinImage(fill: string, px: number): Img {
 /** Ship sprites (white, tinted per billboard), drawn at 2x. Css sizes in pixels. */
 const ARROW_CSS = 14, DOT_CSS = 6, SELECTED_CSS = 26;
 function arrowPath(g: CanvasRenderingContext2D, cx: number, cy: number, s: number) {
-  // a slim chevron-arrow pointing up, s = overall height
   g.beginPath();
   g.moveTo(cx, cy - s / 2);
   g.lineTo(cx + s * 0.32, cy + s / 2);
@@ -212,9 +248,9 @@ function shipArrowCanvas(): HTMLCanvasElement {
   arrowPath(g, s / 2, s / 2, s - 2);
   g.lineJoin = "round";
   g.lineWidth = 1.5;
-  g.strokeStyle = "rgba(0,0,0,0.55)";
+  g.strokeStyle = "rgba(0,0,0,0.65)";
   g.stroke();
-  g.fillStyle = "#fff";
+  g.fillStyle = "#ffffff";
   g.fill();
   return c;
 }
@@ -226,10 +262,10 @@ function shipDotCanvas(): HTMLCanvasElement {
   g.scale(R, R);
   g.beginPath();
   g.arc(s / 2, s / 2, s / 2 - 0.75, 0, Math.PI * 2);
-  g.fillStyle = "#fff";
+  g.fillStyle = "#ffffff";
   g.fill();
   g.lineWidth = 0.75;
-  g.strokeStyle = "rgba(0,0,0,0.55)";
+  g.strokeStyle = "rgba(0,0,0,0.65)";
   g.stroke();
   return c;
 }
@@ -239,13 +275,25 @@ function shipSelectedCanvas(color: string, moving: boolean): HTMLCanvasElement {
   c.width = c.height = s * R;
   const g = c.getContext("2d")!;
   g.scale(R, R);
+
+  // Outer ambient glow
   g.beginPath();
-  g.arc(s / 2, s / 2, s / 2 - 1.5, 0, Math.PI * 2);
-  g.fillStyle = "rgba(28,28,30,0.72)";
+  g.arc(s / 2, s / 2, s / 2 - 1, 0, Math.PI * 2);
+  g.fillStyle = "rgba(0, 122, 255, 0.25)";
   g.fill();
-  g.lineWidth = 2;
-  g.strokeStyle = "#fff";
+
+  // Crystal glass disc
+  g.beginPath();
+  g.arc(s / 2, s / 2, s / 2 - 2, 0, Math.PI * 2);
+  const grad = g.createLinearGradient(0, 0, 0, s);
+  grad.addColorStop(0, "rgba(35, 42, 56, 0.95)");
+  grad.addColorStop(1, "rgba(16, 20, 28, 0.9)");
+  g.fillStyle = grad;
+  g.fill();
+  g.lineWidth = 1.75;
+  g.strokeStyle = "#ffffff";
   g.stroke();
+
   if (moving) {
     arrowPath(g, s / 2, s / 2, 13);
     g.fillStyle = color;
@@ -454,14 +502,13 @@ export default function Globe(props: Props) {
         if (scene.skyBox) scene.skyBox.show = false;
         if (scene.sun) scene.sun.show = false;
         if (scene.moon) scene.moon.show = false;
-        scene.globe.baseColor = Cesium.Color.fromCssColorString("#0b0b0d");
-        // ground haze lifts the dark basemap to a flat gray from orbit; keep only the thin sky halo at the limb
+        scene.globe.baseColor = Cesium.Color.fromCssColorString("#06080c");
         scene.globe.showGroundAtmosphere = false;
-        scene.globe.atmosphereBrightnessShift = -0.15;
-        scene.globe.atmosphereSaturationShift = -0.35;
+        scene.globe.atmosphereBrightnessShift = 0.05;
+        scene.globe.atmosphereSaturationShift = 0.1;
         if (scene.skyAtmosphere) {
-          scene.skyAtmosphere.brightnessShift = -0.25;
-          scene.skyAtmosphere.saturationShift = -0.3;
+          scene.skyAtmosphere.brightnessShift = 0.05;
+          scene.skyAtmosphere.saturationShift = 0.15;
         }
         viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees(65, 18, 22_000_000) });
 
@@ -710,14 +757,14 @@ export default function Globe(props: Props) {
       const hex = HAZARD_COLORS[h.category] ?? SYS.red;
       const color = Cesium.Color.fromCssColorString(hex);
       const selected = h.id === props.selectedHazardId;
-      const base = 0.06 + (h.score / 100) * 0.08;
+      const base = 0.08 + (h.score / 100) * 0.12;
       // high-risk zones breathe slowly (8 s cycle, a few percent of alpha): calm, never a strobe
       const fill =
         h.score >= 60
           ? new Cesium.CallbackProperty(() => {
               if (reduceMotion.current) return color.withAlpha(base + 0.03);
               const t = (performance.now() - start) / 1000;
-              return color.withAlpha(base + 0.05 * (0.5 + 0.5 * Math.sin((t * 2 * Math.PI) / 8)));
+              return color.withAlpha(base + 0.06 * (0.5 + 0.5 * Math.sin((t * 2 * Math.PI) / 8)));
             }, false)
           : color.withAlpha(base);
       const label = pill(
@@ -754,15 +801,15 @@ export default function Globe(props: Props) {
           semiMajorAxis: h.radiusKm * 1000,
           semiMinorAxis: h.radiusKm * 1000,
           material: new Cesium.ColorMaterialProperty(fill as CesiumNS.Property),
-          outline: !selected,
-          outlineColor: color.withAlpha(0.55),
-          outlineWidth: 1,
+          outline: true,
+          outlineColor: color.withAlpha(selected ? 0.95 : 0.75),
+          outlineWidth: selected ? 2 : 1,
           height: 0,
         },
         point: {
-          pixelSize: (selected ? 8 : 6) * px,
+          pixelSize: (selected ? 9 : 7) * px,
           color,
-          outlineColor: Cesium.Color.BLACK.withAlpha(0.45),
+          outlineColor: Cesium.Color.WHITE.withAlpha(0.85),
           outlineWidth: px,
         },
         // shown and placed by the per-frame label layout (horizon cull + collision), so no depth test here
@@ -781,9 +828,9 @@ export default function Globe(props: Props) {
           properties: { hazardId: h.id },
           polyline: {
             positions: Cesium.Cartesian3.fromDegreesArrayHeights(circlePositions(h.center, h.radiusKm)),
-            width: 2,
+            width: 3,
             arcType: Cesium.ArcType.NONE,
-            material: new Cesium.ColorMaterialProperty(color.withAlpha(0.95)),
+            material: new Cesium.ColorMaterialProperty(color.withAlpha(1.0)),
           },
         });
     }
@@ -975,7 +1022,7 @@ export default function Globe(props: Props) {
             positions,
             width: 7,
             arcType: Cesium.ArcType.GEODESIC,
-            material: new Cesium.PolylineOutlineMaterialProperty({ color, outlineColor: Cesium.Color.fromCssColorString("#0a3d7a"), outlineWidth: 1.5 }),
+            material: new Cesium.PolylineOutlineMaterialProperty({ color, outlineColor: Cesium.Color.fromCssColorString("#002a5c"), outlineWidth: 1.5 }),
           },
         });
       } else {
@@ -986,8 +1033,8 @@ export default function Globe(props: Props) {
             width: isOriginal ? 2.5 : 2,
             arcType: Cesium.ArcType.GEODESIC,
             material: isOriginal
-              ? new Cesium.PolylineDashMaterialProperty({ color: color.withAlpha(0.8), dashLength: 14 })
-              : new Cesium.ColorMaterialProperty(color.withAlpha(0.5)),
+              ? new Cesium.PolylineDashMaterialProperty({ color: color.withAlpha(0.95), dashLength: 12 })
+              : new Cesium.ColorMaterialProperty(color.withAlpha(0.45)),
           },
         });
       }

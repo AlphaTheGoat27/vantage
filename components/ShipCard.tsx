@@ -23,9 +23,9 @@ const coord = (lat: number, lon: number) => `${Math.abs(lat).toFixed(2)}°${lat 
 export default function ShipCard({ ship, onClose, variant = "floating" }: { ship: Ship; onClose: () => void; variant?: "floating" | "inline" }) {
   const name = ship.name?.trim();
   return (
-    <section aria-label="Selected ship" className={variant === "floating" ? "material w-full rounded-xl p-3" : "group-inset p-3"}>
+    <section aria-label="Selected ship" className={variant === "floating" ? "material w-full rounded-2xl p-3.5 shadow-2xl" : "group-inset p-3.5"}>
       <div className="flex items-start gap-2.5">
-        <span aria-hidden className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: SHIP_COLORS[ship.cls] ?? SHIP_COLORS.unknown }} />
+        <span aria-hidden className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full shadow-[0_0_8px_currentColor]" style={{ background: SHIP_COLORS[ship.cls] ?? SHIP_COLORS.unknown, color: SHIP_COLORS[ship.cls] ?? SHIP_COLORS.unknown }} />
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-body font-semibold text-ink">{name || `MMSI ${ship.mmsi}`}</h2>
           <p className="truncate text-caption text-ink-3">
@@ -33,8 +33,8 @@ export default function ShipCard({ ship, onClose, variant = "floating" }: { ship
             {name && <span className="num"> · MMSI {ship.mmsi}</span>}
           </p>
         </div>
-        <button type="button" aria-label="Close ship details" className="btn-plain -mr-1 -mt-1 h-7 w-7 shrink-0 p-0 text-ink-2" onClick={onClose}>
-          <X size={16} strokeWidth={1.75} />
+        <button type="button" aria-label="Close ship details" className="btn-plain -mr-1 -mt-1 h-7 w-7 rounded-full shrink-0 p-0 text-ink-2 hover:text-white" onClick={onClose}>
+          <X size={15} strokeWidth={2} />
         </button>
       </div>
       <dl className="mt-2.5 grid grid-cols-3 gap-2">

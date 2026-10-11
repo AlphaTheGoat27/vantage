@@ -617,20 +617,29 @@ type ControlProps = { baseMap: BaseMap; onBaseMap: (b: BaseMap) => void; pickMod
 
 function MapControls({ baseMap, onBaseMap, pickMode, onPick, demo, onDemo }: ControlProps) {
   return (
-    <div className="material-control flex items-center gap-2 rounded-xl p-1.5">
+    <div className="material-control flex items-center gap-2 rounded-full p-1.5 shadow-xl">
       <Segmented mode="pressed" label="Map style" options={MAP_STYLES} value={baseMap} onChange={onBaseMap} />
-      <span aria-hidden className="h-5 w-px bg-separator" />
-      <button type="button" aria-pressed={pickMode} onClick={() => onPick(!pickMode)} className={`btn h-7 px-2.5 ${pickMode ? "bg-pink/25" : "bg-transparent hover:bg-fill-2"}`}>
-        <Crosshair size={15} strokeWidth={1.75} className={pickMode ? "text-pink" : "text-ink-2"} />
+      <span aria-hidden className="h-4 w-px bg-white/12" />
+      <button
+        type="button"
+        aria-pressed={pickMode}
+        onClick={() => onPick(!pickMode)}
+        className={`btn h-7.5 px-3 rounded-full text-caption font-medium transition-all ${
+          pickMode
+            ? "bg-pink/25 border-pink/50 text-white shadow-[0_0_12px_rgba(255,45,85,0.45)]"
+            : "hover:text-white"
+        }`}
+      >
+        <Crosshair size={14} strokeWidth={2} className={pickMode ? "text-pink" : "text-ink-2"} />
         Simulate strike
       </button>
-      <span aria-hidden className="h-5 w-px bg-separator" />
-      <label htmlFor="demo-switch-wide" className="cursor-pointer pl-0.5 text-caption font-medium text-ink-2">
-        Demo
-      </label>
-      <span className="pr-1">
+      <span aria-hidden className="h-4 w-px bg-white/12" />
+      <div className="flex items-center gap-1.5 pl-1 pr-2">
+        <label htmlFor="demo-switch-wide" className="cursor-pointer text-caption font-medium text-ink-2 hover:text-ink">
+          Demo
+        </label>
         <Switch id="demo-switch-wide" size="sm" checked={demo} onChange={onDemo} />
-      </span>
+      </div>
     </div>
   );
 }
@@ -653,8 +662,14 @@ function CompactControls({ baseMap, onBaseMap, pickMode, onPick, demo, onDemo }:
   }, [menu]);
   return (
     <div ref={ref} className="relative">
-      <div className="material-control flex items-center gap-0.5 rounded-xl p-1">
-        <button type="button" className="btn-plain h-8 w-8 p-0 text-ink" aria-label="Map style" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
+      <div className="material-control flex items-center gap-1 rounded-full p-1 shadow-xl">
+        <button
+          type="button"
+          className="btn-plain h-8 w-8 rounded-full p-0 text-ink hover:text-white"
+          aria-label="Map style"
+          aria-expanded={menu}
+          onClick={() => setMenu((m) => !m)}
+        >
           <Layers {...ICON} />
         </button>
         <button
@@ -662,22 +677,24 @@ function CompactControls({ baseMap, onBaseMap, pickMode, onPick, demo, onDemo }:
           aria-label="Simulate strike"
           aria-pressed={pickMode}
           onClick={() => onPick(!pickMode)}
-          className={`btn-plain h-8 w-8 p-0 ${pickMode ? "bg-pink/25 text-pink" : "text-ink"}`}
+          className={`btn-plain h-8 w-8 rounded-full p-0 transition-all ${
+            pickMode ? "bg-pink/25 border-pink/50 text-pink shadow-[0_0_12px_rgba(255,45,85,0.45)]" : "text-ink hover:text-white"
+          }`}
         >
           <Crosshair {...ICON} />
         </button>
-        <span aria-hidden className="mx-1 h-5 w-px bg-separator" />
-        <label htmlFor="demo-switch-compact" className="cursor-pointer text-caption font-medium text-ink-2">
-          Demo
-        </label>
-        <span className="px-1.5">
+        <span aria-hidden="true" className="mx-0.5 h-4 w-px bg-white/12" />
+        <div className="flex items-center gap-1.5 pl-1 pr-2">
+          <label htmlFor="demo-switch-compact" className="cursor-pointer text-caption font-medium text-ink-2 hover:text-ink">
+            Demo
+          </label>
           <Switch id="demo-switch-compact" size="sm" checked={demo} onChange={onDemo} />
-        </span>
+        </div>
       </div>
       <AnimatePresence>
         {menu && (
           <motion.div
-            className="material-control absolute right-0 top-full mt-2 rounded-xl p-1.5"
+            className="material-control absolute right-0 top-full mt-2 rounded-2xl p-1.5 shadow-2xl"
             style={{ transformOrigin: "top right" }}
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}

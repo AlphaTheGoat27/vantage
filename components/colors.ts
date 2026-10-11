@@ -2,19 +2,19 @@ import type { PlannedRoute } from "@/lib/types";
 
 // Apple dark system colours (mirrors the tokens in app/globals.css). Cesium needs literal values.
 export const SYS = {
-  red: "#ff453a",
-  orange: "#ff9f0a",
-  yellow: "#ffd60a",
-  green: "#30d158",
-  mint: "#63e6e2",
-  teal: "#40c8e0",
-  cyan: "#64d2ff",
-  blue: "#0a84ff",
-  indigo: "#5e5ce6",
-  purple: "#bf5af2",
-  pink: "#ff375f",
+  red: "#ff3b30",
+  orange: "#ff9500",
+  yellow: "#ffcc00",
+  green: "#34c759",
+  mint: "#00c7be",
+  teal: "#30b0c7",
+  cyan: "#32ade6",
+  blue: "#007aff",
+  indigo: "#5856d6",
+  purple: "#af52de",
+  pink: "#ff2d55",
   gray: "#8e8e93",
-  ink: "#f5f5f7",
+  ink: "#ffffff",
 } as const;
 
 export const HAZARD_COLORS: Record<string, string> = {
@@ -33,10 +33,10 @@ export const HAZARD_COLORS: Record<string, string> = {
 };
 
 /**
- * Routes are coloured by role, not by id (Apple Maps): the selected route is blue, the original is a light
- * dashed line, every other alternative is muted gray. That keeps yellow / teal / purple free for risk and hazards.
+ * Routes are coloured by role (Apple Maps): selected route is electric blue, original is a crisp
+ * light dashed line, alternatives are sleek translucent silver.
  */
-export const ROUTE_ROLE = { selected: SYS.blue, original: "#d1d1d6", alternative: "#8e8e93" } as const;
+export const ROUTE_ROLE = { selected: SYS.blue, original: "#f2f2f7", alternative: "rgba(255,255,255,0.45)" } as const;
 export const routeColor = (id: PlannedRoute["id"], selectedId: PlannedRoute["id"] | null | undefined) =>
   id === selectedId ? ROUTE_ROLE.selected : id === "original" ? ROUTE_ROLE.original : ROUTE_ROLE.alternative;
 
@@ -45,7 +45,7 @@ export const SHIP_COLORS: Record<string, string> = {
   tanker: SYS.orange,
   passenger: SYS.green,
   fishing: SYS.gray,
-  other: "#d1d1d6",
+  other: "#e5e5ea",
   unknown: "#636366",
 };
 
