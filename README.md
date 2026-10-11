@@ -238,7 +238,3 @@ All of them are free.
 - Live AIS is a short sample per request, not a continuous feed.
 - Route planning is limited to the MARNET sea-lane network, so very local navigation is out of scope.
 - News-based signals depend on what the free feeds publish and when.
-
-## License
-
-Add a license here, for example MIT.
